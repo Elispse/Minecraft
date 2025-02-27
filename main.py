@@ -1,8 +1,10 @@
-from window import Window
+# from window import Window
+# from pyglet import image
+# from pyglet.gl import *  # noqa: F403
+# from pyglet.graphics import TextureGroup
+import window
 from pyglet import image
-from pyglet.gl import *
-from pyglet.graphics import TextureGroup
-from pyglet.window import key, mouse
+from pyglet.gl import *  # noqa: F403
 
 def setup_fog():
     """ Configure the OpenGL fog properties.
@@ -41,9 +43,9 @@ def setup():
     setup_fog()
 
 def main():
-    window = Window(width=800, height=600, caption='Pyglet', resizable=True)
+    userWindow = window.Window(width=800, height=600, caption='Pyglet', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
-    window.set_exclusive_mouse(True)
+    userWindow.set_exclusive_mouse(True)
     setup()
     pyglet.app.run()
 

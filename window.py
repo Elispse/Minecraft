@@ -1,18 +1,11 @@
 from __future__ import division
 
-import sys
 import math
-import random
-import time
 import model
-import block
-import mmath
 import player
 
-from collections import deque
-from pyglet import image
+#from collections import deque
 from pyglet.gl import *
-from pyglet.graphics import TextureGroup
 from pyglet.window import key, mouse
 
 
@@ -78,7 +71,7 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [block.BRICK, block.GRASS, block.SAND, block.DIRT]
+        self.inventory = [model.block.BRICK, model.block.GRASS, model.block.SAND, model.block.DIRT]
 
         # The current block the user can place. Hit num keys to cycle.
         self.block = self.inventory[0]
@@ -238,7 +231,7 @@ class Window(pyglet.window.Window):
         # tall grass. If >= .5, you'll fall through the ground.
         pad = 0.25
         p = list(position)
-        np = mmath.normalize(position)
+        np = model.mmath.normalize(position)
         for face in model.FACES:  # check all surrounding blocks
             for i in model.xrange(3):  # check each dimension independently
                 if not face[i]:
@@ -280,15 +273,15 @@ class Window(pyglet.window.Window):
         """
         if self.exclusive:
             vector = self.get_sight_vector()
-            selectedBlock, previous = self.player.hit_test(self.position, vector)
+            selectedBlock, previous = self.player.hit_test(self.position, self.model.world, vector)
             if (button == mouse.RIGHT) or \
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
                     self.model.add_block(previous, self.block)
-            elif button == pyglet.window.mouse.LEFT and block:
+            elif button == pyglet.window.mouse.LEFT and selectedBlock:
                 texture = self.model.world[selectedBlock]
-                if texture != block.STONE:
+                if texture != model.block.STONE:
                     self.model.remove_block(selectedBlock)
         else:
             self.set_exclusive_mouse(True)

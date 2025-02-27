@@ -1,7 +1,6 @@
 from __future__ import division
 
 import sys
-import math
 import random
 import time
 import block
@@ -11,7 +10,6 @@ from collections import deque
 from pyglet import image
 from pyglet.gl import *
 from pyglet.graphics import TextureGroup
-from pyglet.window import key, mouse
 
 if sys.version_info[0] >= 3:
     xrange = range
@@ -45,10 +43,6 @@ FACES = [
     ( 0, 0,-1),
 ]
 
-
-
-
-
 def sectorize(position):
     """ Returns a tuple representing the sector for the given `position`.
 
@@ -68,7 +62,7 @@ def sectorize(position):
 class Model(object):
 
     def __init__(self):
-
+        
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 

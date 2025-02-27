@@ -3,6 +3,8 @@ from __future__ import division
 import sys
 import mmath
 
+from pyglet.window import key, mouse
+
 if sys.version_info[0] >= 3:
     xrange = range
 
