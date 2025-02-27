@@ -5,6 +5,7 @@ import math
 import random
 import time
 import model
+import block
 
 from collections import deque
 from pyglet import image
@@ -72,7 +73,7 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [model.BRICK, model.GRASS, model.SAND]
+        self.inventory = [block.BRICK, block.GRASS, block.SAND]
 
         # The current block the user can place. Hit num keys to cycle.
         self.block = self.inventory[0]
@@ -274,16 +275,16 @@ class Window(pyglet.window.Window):
         """
         if self.exclusive:
             vector = self.get_sight_vector()
-            block, previous = self.model.hit_test(self.position, vector)
+            selectedBlock, previous = self.model.hit_test(self.position, vector)
             if (button == mouse.RIGHT) or \
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
                     self.model.add_block(previous, self.block)
             elif button == pyglet.window.mouse.LEFT and block:
-                texture = self.model.world[block]
-                if texture != model.STONE:
-                    self.model.remove_block(block)
+                texture = self.model.world[selectedBlock]
+                if texture != block.STONE:
+                    self.model.remove_block(selectedBlock)
         else:
             self.set_exclusive_mouse(True)
 
