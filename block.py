@@ -21,6 +21,7 @@ def tex_coords(top, bottom, side):
     return result
 
 GRASS = tex_coords((1, 0), (0, 1), (0, 0))
+DIRT = tex_coords((0, 1), (0, 1), (0, 1))
 SAND = tex_coords((1, 1), (1, 1), (1, 1))
 BRICK = tex_coords((2, 0), (2, 0), (2, 0))
 STONE = tex_coords((2, 1), (2, 1), (2, 1))

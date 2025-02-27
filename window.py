@@ -6,6 +6,8 @@ import random
 import time
 import model
 import block
+import mmath
+import player
 
 from collections import deque
 from pyglet import image
@@ -36,7 +38,10 @@ class Window(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
-
+        
+        
+        self.player = player.Player()
+        
         # Whether or not the window exclusively captures the mouse.
         self.exclusive = False
 
@@ -73,7 +78,7 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [block.BRICK, block.GRASS, block.SAND]
+        self.inventory = [block.BRICK, block.GRASS, block.SAND, block.DIRT]
 
         # The current block the user can place. Hit num keys to cycle.
         self.block = self.inventory[0]
@@ -233,7 +238,7 @@ class Window(pyglet.window.Window):
         # tall grass. If >= .5, you'll fall through the ground.
         pad = 0.25
         p = list(position)
-        np = model.normalize(position)
+        np = mmath.normalize(position)
         for face in model.FACES:  # check all surrounding blocks
             for i in model.xrange(3):  # check each dimension independently
                 if not face[i]:
@@ -275,7 +280,7 @@ class Window(pyglet.window.Window):
         """
         if self.exclusive:
             vector = self.get_sight_vector()
-            selectedBlock, previous = self.model.hit_test(self.position, vector)
+            selectedBlock, previous = self.player.hit_test(self.position, vector)
             if (button == mouse.RIGHT) or \
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
@@ -426,7 +431,7 @@ class Window(pyglet.window.Window):
 
         """
         vector = self.get_sight_vector()
-        block = self.model.hit_test(self.position, vector)[0]
+        block = self.player.hit_test(self.position, self.model.world, vector)[0]
         if block:
             x, y, z = block
             vertex_data = model.cube_vertices(x, y, z, 0.51)

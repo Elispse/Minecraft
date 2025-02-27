@@ -5,6 +5,7 @@ import math
 import random
 import time
 import block
+import mmath
 
 from collections import deque
 from pyglet import image
@@ -45,22 +46,7 @@ FACES = [
 ]
 
 
-def normalize(position):
-    """ Accepts `position` of arbitrary precision and returns the block
-    containing that position.
 
-    Parameters
-    ----------
-    position : tuple of len 3
-
-    Returns
-    -------
-    block_position : tuple of ints of len 3
-
-    """
-    x, y, z = position
-    x, y, z = (int(round(x)), int(round(y)), int(round(z)))
-    return (x, y, z)
 
 
 def sectorize(position):
@@ -75,7 +61,7 @@ def sectorize(position):
     sector : tuple of len 3
 
     """
-    x, y, z = normalize(position)
+    x, y, z = mmath.normalize(position)
     x, y, z = x // SECTOR_SIZE, y // SECTOR_SIZE, z // SECTOR_SIZE
     return (x, 0, z)
 
@@ -145,32 +131,7 @@ class Model(object):
                         self.add_block((x, y, z), t, immediate=False)
                 s -= d  # decrement side length so hills taper off
 
-    def hit_test(self, position, vector, max_distance=8):
-        """ Line of sight search from current position. If a block is
-        intersected it is returned, along with the block previously in the line
-        of sight. If no block is found, return None, None.
-
-        Parameters
-        ----------
-        position : tuple of len 3
-            The (x, y, z) position to check visibility from.
-        vector : tuple of len 3
-            The line of sight vector.
-        max_distance : int
-            How many blocks away to search for a hit.
-
-        """
-        m = 8
-        x, y, z = position
-        dx, dy, dz = vector
-        previous = None
-        for _ in xrange(max_distance * m):
-            key = normalize((x, y, z))
-            if key != previous and key in self.world:
-                return key, previous
-            previous = key
-            x, y, z = x + dx / m, y + dy / m, z + dz / m
-        return None, None
+    
 
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
