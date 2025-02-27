@@ -14,8 +14,11 @@ class Window(pyglet.window.Window):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         
+        # Instance of the model that handles the world.
+        self.model = model.Model()
         
-        self.player = player.Player()
+        self.player = player.Player(model)
+        
         
         # Whether or not the window exclusively captures the mouse.
         self.exclusive = False
@@ -29,11 +32,11 @@ class Window(pyglet.window.Window):
         # First element is -1 when moving forward, 1 when moving back, and 0
         # otherwise. The second element is -1 when moving left, 1 when moving
         # right, and 0 otherwise.
-        self.strafe = [0, 0]
+        #self.strafe = [0, 0]
 
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.position = (0, 0, 0)
+        #self.position = (0, 0, 0)
 
         # First element is rotation of the player in the x-z plane (ground
         # plane) measured from the z-axis down. The second is the rotation
@@ -41,7 +44,7 @@ class Window(pyglet.window.Window):
         #
         # The vertical plane rotation ranges from -90 (looking straight down) to
         # 90 (looking straight up). The horizontal rotation range is unbounded.
-        self.rotation = (0, 0)
+        #self.rotation = (0, 0)
 
         # Which sector the player is currently in.
         self.sector = None
@@ -56,9 +59,6 @@ class Window(pyglet.window.Window):
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
             key._6, key._7, key._8, key._9, key._0]
-
-        # Instance of the model that handles the world.
-        self.model = model.Model()
 
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,  # noqa: F405
@@ -82,7 +82,7 @@ class Window(pyglet.window.Window):
         the player is looking.
 
         """
-        x, y = self.rotation
+        x, y = self.player.rotation
         # y ranges from -90 to 90, or -pi/2 to pi/2, so m ranges from 0 to 1 and
         # is 1 when looking ahead parallel to the ground and 0 when looking
         # straight up or down.
@@ -105,7 +105,7 @@ class Window(pyglet.window.Window):
 
         """
         if any(self.strafe):
-            x, y = self.rotation
+            x, y = self.player.rotation
             strafe = math.degrees(math.atan2(*self.strafe))
             y_angle = math.radians(y)
             x_angle = math.radians(x + strafe)
@@ -144,7 +144,7 @@ class Window(pyglet.window.Window):
 
         """
         self.model.process_queue()
-        sector = model.sectorize(self.position)
+        sector = model.sectorize(self.player.position)
         if sector != self.sector:
             self.model.change_sectors(self.sector, sector)
             if self.sector is None:
@@ -153,36 +153,7 @@ class Window(pyglet.window.Window):
         m = 8
         dt = min(dt, 0.2)
         for _ in model.xrange(m):
-            self._update(dt / m)
-
-    def _update(self, dt):
-        """ Private implementation of the `update()` method. This is where most
-        of the motion logic lives, along with gravity and collision detection.
-
-        Parameters
-        ----------
-        dt : float
-            The change in time since the last call.
-
-        """
-        # walking
-        speed = self.player.FLYING_SPEED if self.flying else self.player.WALKING_SPEED
-        d = dt * speed # distance covered this tick.
-        dx, dy, dz = self.get_motion_vector()
-        # New position in space, before accounting for gravity.
-        dx, dy, dz = dx * d, dy * d, dz * d
-        # gravity
-        if not self.flying:
-            # Update your vertical speed: if you are falling, speed up until you
-            # hit terminal velocity; if you are jumping, slow down until you
-            # start falling.
-            self.dy -= dt * self.player.GRAVITY
-            self.dy = max(self.dy, -self.player.TERMINAL_VELOCITY)
-            dy += self.dy * dt
-        # collisions
-        x, y, z = self.position
-        x, y, z = self.model.collide((x + dx, y + dy, z + dz), self.player.PLAYER_HEIGHT)
-        self.position = (x, y, z)
+            self.player.updatePosition(self, dt / m)
 
     def on_mouse_press(self, x, y, button, modifiers):
         """ Called when a mouse button is pressed. See pyglet docs for button
@@ -203,7 +174,7 @@ class Window(pyglet.window.Window):
         """
         if self.exclusive:
             vector = self.get_sight_vector()
-            selectedBlock, previous = self.player.hit_test(self.position, self.model.world, vector)
+            selectedBlock, previous = self.player.hit_test(self.model.world, vector)
             if (button == mouse.RIGHT) or \
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
@@ -230,10 +201,10 @@ class Window(pyglet.window.Window):
         """
         if self.exclusive:
             m = 0.15
-            x, y = self.rotation
+            x, y = self.player.rotation
             x, y = x + dx * m, y + dy * m
             y = max(-90, min(90, y))
-            self.rotation = (x, y)
+            self.player.rotation = (x, y)
 
     def on_key_press(self, symbol, modifiers):
         """ Called when the player presses a key. See pyglet docs for key
@@ -248,20 +219,20 @@ class Window(pyglet.window.Window):
 
         """
         if symbol == key.W:
-            self.strafe[0] -= 1
+            self.player.strafe[0] -= 1
         elif symbol == key.S:
-            self.strafe[0] += 1
+            self.player.strafe[0] += 1
         elif symbol == key.A:
-            self.strafe[1] -= 1
+            self.player.strafe[1] -= 1
         elif symbol == key.D:
-            self.strafe[1] += 1
+            self.player.strafe[1] += 1
         elif symbol == key.SPACE:
             if self.dy == 0:
-                self.dy = player.JUMP_SPEED
+                self.dy = self.player.JUMP_SPEED
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
         elif symbol == key.TAB:
-            self.flying = not self.flying
+            self.player.flying = not self.player.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.player.inventory.hotbar)
             self.player.inventory.block = self.player.inventory.hotbar[index]
@@ -279,13 +250,13 @@ class Window(pyglet.window.Window):
 
         """
         if symbol == key.W:
-            self.strafe[0] += 1
+            self.player.strafe[0] += 1
         elif symbol == key.S:
-            self.strafe[0] -= 1
+            self.player.strafe[0] -= 1
         elif symbol == key.A:
-            self.strafe[1] += 1
+            self.player.strafe[1] += 1
         elif symbol == key.D:
-            self.strafe[1] -= 1
+            self.player.strafe[1] -= 1
 
     def on_resize(self, width, height):
         """ Called when the window is resized to a new `width` and `height`.
@@ -329,10 +300,10 @@ class Window(pyglet.window.Window):
         gluPerspective(65.0, width / float(height), 0.1, 60.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        x, y = self.rotation
+        x, y = self.player.rotation
         glRotatef(x, 0, 1, 0)
         glRotatef(-y, math.cos(math.radians(x)), 0, math.sin(math.radians(x)))
-        x, y, z = self.position
+        x, y, z = self.player.position
         glTranslatef(-x, -y, -z)
 
     def on_draw(self):
@@ -354,7 +325,7 @@ class Window(pyglet.window.Window):
 
         """
         vector = self.get_sight_vector()
-        block = self.player.hit_test(self.position, self.model.world, vector)[0]
+        block = self.player.hit_test(self.model.world, vector)[0]
         if block:
             x, y, z = block
             vertex_data = model.cube_vertices(x, y, z, 0.51)
@@ -367,7 +338,7 @@ class Window(pyglet.window.Window):
         """ Draw the label in the top left of the screen.
 
         """
-        x, y, z = self.position
+        x, y, z = self.player.position
         self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
             pyglet.clock.get_fps(), x, y, z,
             len(self.model._shown), len(self.model.world))

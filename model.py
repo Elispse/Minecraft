@@ -8,7 +8,7 @@ import mmath
 
 from collections import deque
 from pyglet import image
-from pyglet.gl import *
+from pyglet.gl import *  # noqa: F403
 from pyglet.graphics import TextureGroup
 
 if sys.version_info[0] >= 3:
@@ -64,7 +64,7 @@ class Model(object):
             ( 0, 0,-1),
         ]
         # A Batch is a collection of vertex lists for batched rendering.
-        self.batch = pyglet.graphics.Batch()
+        self.batch = pyglet.graphics.Batch()  # noqa: F405
 
         # A TextureGroup manages an OpenGL texture.
         self.group = TextureGroup(image.load(TEXTURE_PATH).get_texture())
@@ -307,7 +307,7 @@ class Model(object):
         for sector in hide:
             self.hide_sector(sector)
     
-    def collide(self, position, height):
+    def collide(self, window, position, height):
         """ Checks to see if the player at the given `position` and `height`
         is colliding with any blocks in the world.
 
@@ -349,8 +349,7 @@ class Model(object):
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
                         # falling / rising.
-                        print(face)
-                        self.dy = 0
+                        window.dy = 0
                     break
         return tuple(p)
 
