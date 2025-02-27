@@ -5,27 +5,9 @@ import model
 import player
 
 #from collections import deque
-from pyglet.gl import *
+from pyglet.gl import *  # noqa: F403
 from pyglet.window import key, mouse
 
-
-
-WALKING_SPEED = 5
-FLYING_SPEED = 15
-
-GRAVITY = 20.0
-MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
-# To derive the formula for calculating jump speed, first solve
-#    v_t = v_0 + a * t
-# for the time at which you achieve maximum height, where a is the acceleration
-# due to gravity and v_t = 0. This gives:
-#    t = - v_0 / a
-# Use t and the desired MAX_JUMP_HEIGHT to solve for v_0 (jump speed) in
-#    s = s_0 + v_0 * t + (a * t^2) / 2
-JUMP_SPEED = math.sqrt(2 * GRAVITY * MAX_JUMP_HEIGHT)
-TERMINAL_VELOCITY = 50
-
-PLAYER_HEIGHT = 2
 
 class Window(pyglet.window.Window):
 
@@ -70,12 +52,6 @@ class Window(pyglet.window.Window):
         # Velocity in the y (upward) direction.
         self.dy = 0
 
-        # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [model.block.BRICK, model.block.GRASS, model.block.SAND, model.block.DIRT]
-
-        # The current block the user can place. Hit num keys to cycle.
-        self.block = self.inventory[0]
-
         # Convenience list of num keys.
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
@@ -85,13 +61,13 @@ class Window(pyglet.window.Window):
         self.model = model.Model()
 
         # The label that is displayed in the top left of the canvas.
-        self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
+        self.label = pyglet.text.Label('', font_name='Arial', font_size=18,  # noqa: F405
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
             color=(0, 0, 0, 255))
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
-        pyglet.clock.schedule_interval(self.update, 1.0 / model.TICKS_PER_SEC)
+        pyglet.clock.schedule_interval(self.update, 1.0 / model.TICKS_PER_SEC)  # noqa: F405
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -190,7 +166,7 @@ class Window(pyglet.window.Window):
 
         """
         # walking
-        speed = FLYING_SPEED if self.flying else WALKING_SPEED
+        speed = self.player.FLYING_SPEED if self.flying else self.player.WALKING_SPEED
         d = dt * speed # distance covered this tick.
         dx, dy, dz = self.get_motion_vector()
         # New position in space, before accounting for gravity.
@@ -200,59 +176,13 @@ class Window(pyglet.window.Window):
             # Update your vertical speed: if you are falling, speed up until you
             # hit terminal velocity; if you are jumping, slow down until you
             # start falling.
-            self.dy -= dt * GRAVITY
-            self.dy = max(self.dy, -TERMINAL_VELOCITY)
+            self.dy -= dt * self.player.GRAVITY
+            self.dy = max(self.dy, -self.player.TERMINAL_VELOCITY)
             dy += self.dy * dt
         # collisions
         x, y, z = self.position
-        x, y, z = self.collide((x + dx, y + dy, z + dz), PLAYER_HEIGHT)
+        x, y, z = self.model.collide((x + dx, y + dy, z + dz), self.player.PLAYER_HEIGHT)
         self.position = (x, y, z)
-
-    def collide(self, position, height):
-        """ Checks to see if the player at the given `position` and `height`
-        is colliding with any blocks in the world.
-
-        Parameters
-        ----------
-        position : tuple of len 3
-            The (x, y, z) position to check for collisions at.
-        height : int or float
-            The height of the player.
-
-        Returns
-        -------
-        position : tuple of len 3
-            The new position of the player taking into account collisions.
-
-        """
-        # How much overlap with a dimension of a surrounding block you need to
-        # have to count as a collision. If 0, touching terrain at all counts as
-        # a collision. If .49, you sink into the ground, as if walking through
-        # tall grass. If >= .5, you'll fall through the ground.
-        pad = 0.25
-        p = list(position)
-        np = model.mmath.normalize(position)
-        for face in model.FACES:  # check all surrounding blocks
-            for i in model.xrange(3):  # check each dimension independently
-                if not face[i]:
-                    continue
-                # How much overlap you have with this dimension.
-                d = (p[i] - np[i]) * face[i]
-                if d < pad:
-                    continue
-                for dy in model.xrange(height):  # check each height
-                    op = list(np)
-                    op[1] -= dy
-                    op[i] += face[i]
-                    if tuple(op) not in self.model.world:
-                        continue
-                    p[i] -= (d - pad) * face[i]
-                    if face == (0, -1, 0) or face == (0, 1, 0):
-                        # You are colliding with the ground or ceiling, so stop
-                        # falling / rising.
-                        self.dy = 0
-                    break
-        return tuple(p)
 
     def on_mouse_press(self, x, y, button, modifiers):
         """ Called when a mouse button is pressed. See pyglet docs for button
@@ -278,8 +208,8 @@ class Window(pyglet.window.Window):
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
-                    self.model.add_block(previous, self.block)
-            elif button == pyglet.window.mouse.LEFT and selectedBlock:
+                    self.model.add_block(previous, self.player.inventory.block)
+            elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
                 texture = self.model.world[selectedBlock]
                 if texture != model.block.STONE:
                     self.model.remove_block(selectedBlock)
@@ -327,14 +257,14 @@ class Window(pyglet.window.Window):
             self.strafe[1] += 1
         elif symbol == key.SPACE:
             if self.dy == 0:
-                self.dy = JUMP_SPEED
+                self.dy = player.JUMP_SPEED
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
         elif symbol == key.TAB:
             self.flying = not self.flying
         elif symbol in self.num_keys:
-            index = (symbol - self.num_keys[0]) % len(self.inventory)
-            self.block = self.inventory[index]
+            index = (symbol - self.num_keys[0]) % len(self.player.inventory.hotbar)
+            self.player.inventory.block = self.player.inventory.hotbar[index]
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
@@ -377,9 +307,9 @@ class Window(pyglet.window.Window):
 
         """
         width, height = self.get_size()
-        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_DEPTH_TEST)  # noqa: F405
         viewport = self.get_viewport_size()
-        glViewport(0, 0, max(1, viewport[0]), max(1, viewport[1]))
+        glViewport(0, 0, max(1, viewport[0]), max(1, viewport[1]))  # noqa: F405
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glOrtho(0, max(1, width), 0, max(1, height), -1, 1)
@@ -411,7 +341,7 @@ class Window(pyglet.window.Window):
         """
         self.clear()
         self.set_3d()
-        glColor3d(1, 1, 1)
+        glColor3d(1, 1, 1)  # noqa: F405
         self.model.batch.draw()
         self.draw_focused_block()
         self.set_2d()
@@ -430,8 +360,8 @@ class Window(pyglet.window.Window):
             vertex_data = model.cube_vertices(x, y, z, 0.51)
             glColor3d(0, 0, 0)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-            pyglet.graphics.draw(24, GL_QUADS, ('v3f/static', vertex_data))
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+            pyglet.graphics.draw(24, GL_QUADS, ('v3f/static', vertex_data))  # noqa: F405
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)  # noqa: F405
 
     def draw_label(self):
         """ Draw the label in the top left of the screen.

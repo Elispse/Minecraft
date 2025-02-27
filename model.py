@@ -34,14 +34,7 @@ def cube_vertices(x, y, z, n):
 
 TEXTURE_PATH = 'texture.png'
 
-FACES = [
-    ( 0, 1, 0),
-    ( 0,-1, 0),
-    (-1, 0, 0),
-    ( 1, 0, 0),
-    ( 0, 0, 1),
-    ( 0, 0,-1),
-]
+
 
 def sectorize(position):
     """ Returns a tuple representing the sector for the given `position`.
@@ -62,7 +55,14 @@ def sectorize(position):
 class Model(object):
 
     def __init__(self):
-        
+        self.FACES = [
+            ( 0, 1, 0),
+            ( 0,-1, 0),
+            (-1, 0, 0),
+            ( 1, 0, 0),
+            ( 0, 0, 1),
+            ( 0, 0,-1),
+        ]
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
@@ -133,7 +133,7 @@ class Model(object):
 
         """
         x, y, z = position
-        for dx, dy, dz in FACES:
+        for dx, dy, dz in self.FACES:
             if (x + dx, y + dy, z + dz) not in self.world:
                 return True
         return False
@@ -187,7 +187,7 @@ class Model(object):
 
         """
         x, y, z = position
-        for dx, dy, dz in FACES:
+        for dx, dy, dz in self.FACES:
             key = (x + dx, y + dy, z + dz)
             if key not in self.world:
                 continue
@@ -306,6 +306,53 @@ class Model(object):
             self.show_sector(sector)
         for sector in hide:
             self.hide_sector(sector)
+    
+    def collide(self, position, height):
+        """ Checks to see if the player at the given `position` and `height`
+        is colliding with any blocks in the world.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position to check for collisions at.
+        height : int or float
+            The height of the player.
+
+        Returns
+        -------
+        position : tuple of len 3
+            The new position of the player taking into account collisions.
+
+        """
+        # How much overlap with a dimension of a surrounding block you need to
+        # have to count as a collision. If 0, touching terrain at all counts as
+        # a collision. If .49, you sink into the ground, as if walking through
+        # tall grass. If >= .5, you'll fall through the ground.
+        pad = 0.25
+        p = list(position)
+        np = mmath.normalize(position)
+        for face in self.FACES:  # check all surrounding blocks
+            for i in xrange(3):  # check each dimension independently
+                if not face[i]:
+                    continue
+                # How much overlap you have with this dimension.
+                d = (p[i] - np[i]) * face[i]
+                if d < pad:
+                    continue
+                for dy in xrange(height):  # check each height
+                    op = list(np)
+                    op[1] -= dy
+                    op[i] += face[i]
+                    if tuple(op) not in self.world:
+                        continue
+                    p[i] -= (d - pad) * face[i]
+                    if face == (0, -1, 0) or face == (0, 1, 0):
+                        # You are colliding with the ground or ceiling, so stop
+                        # falling / rising.
+                        print(face)
+                        self.dy = 0
+                    break
+        return tuple(p)
 
     def _enqueue(self, func, *args):
         """ Add `func` to the internal queue.

@@ -2,14 +2,36 @@ from __future__ import division
 
 import sys
 import mmath
+import math
+import inventory
 
 from pyglet.window import key, mouse
 
 if sys.version_info[0] >= 3:
     xrange = range
 
+
+
 class Player():
     def __init__(self, *args, **kwargs):
+        self.WALKING_SPEED = 5
+        self.FLYING_SPEED = 15
+
+        self.GRAVITY = 20.0
+        self.MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
+        # To derive the formula for calculating jump speed, first solve
+        #    v_t = v_0 + a * t
+        # for the time at which you achieve maximum height, where a is the acceleration
+        # due to gravity and v_t = 0. This gives:
+        #    t = - v_0 / a
+        # Use t and the desired MAX_JUMP_HEIGHT to solve for v_0 (jump speed) in
+        #    s = s_0 + v_0 * t + (a * t^2) / 2
+        self.JUMP_SPEED = math.sqrt(2 * self.GRAVITY * self.MAX_JUMP_HEIGHT)
+        self.TERMINAL_VELOCITY = 50
+
+        self.PLAYER_HEIGHT = 2
+        
+        self.inventory = inventory.Inventory()
         return
     
     def hit_test(self, position, world, vector, max_distance=8):
