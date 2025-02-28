@@ -34,7 +34,14 @@ def cube_vertices(x, y, z, n):
 
 TEXTURE_PATH = 'texture.png'
 
-
+FACES = [
+        ( 0, 1, 0),
+        ( 0,-1, 0),
+        (-1, 0, 0),
+        ( 1, 0, 0),
+        ( 0, 0, 1),
+        ( 0, 0,-1),
+    ]
 
 def sectorize(position):
     """ Returns a tuple representing the sector for the given `position`.
@@ -55,14 +62,6 @@ def sectorize(position):
 class Model(object):
 
     def __init__(self):
-        self.FACES = [
-            ( 0, 1, 0),
-            ( 0,-1, 0),
-            (-1, 0, 0),
-            ( 1, 0, 0),
-            ( 0, 0, 1),
-            ( 0, 0,-1),
-        ]
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()  # noqa: F405
 
@@ -133,7 +132,7 @@ class Model(object):
 
         """
         x, y, z = position
-        for dx, dy, dz in self.FACES:
+        for dx, dy, dz in FACES:
             if (x + dx, y + dy, z + dz) not in self.world:
                 return True
         return False
@@ -187,7 +186,7 @@ class Model(object):
 
         """
         x, y, z = position
-        for dx, dy, dz in self.FACES:
+        for dx, dy, dz in FACES:
             key = (x + dx, y + dy, z + dz)
             if key not in self.world:
                 continue
@@ -331,7 +330,7 @@ class Model(object):
         pad = 0.25
         p = list(position)
         np = mmath.normalize(position)
-        for face in self.FACES:  # check all surrounding blocks
+        for face in FACES:  # check all surrounding blocks
             for i in xrange(3):  # check each dimension independently
                 if not face[i]:
                     continue

@@ -6,7 +6,6 @@ import player
 
 #from collections import deque
 from pyglet.gl import *  # noqa: F403
-from pyglet.window import key, mouse
 
 
 class Window(pyglet.window.Window):
@@ -17,34 +16,8 @@ class Window(pyglet.window.Window):
         # Instance of the model that handles the world.
         self.model = model.Model()
         
-        self.player = player.Player(model)
-        
-        
-        # Whether or not the window exclusively captures the mouse.
-        self.exclusive = False
-
-        # When flying gravity has no effect and speed is increased.
-        self.flying = False
-
-        # Strafing is moving lateral to the direction you are facing,
-        # e.g. moving to the left or right while continuing to face forward.
-        #
-        # First element is -1 when moving forward, 1 when moving back, and 0
-        # otherwise. The second element is -1 when moving left, 1 when moving
-        # right, and 0 otherwise.
-        #self.strafe = [0, 0]
-
-        # Current (x, y, z) position in the world, specified with floats. Note
-        # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        #self.position = (0, 0, 0)
-
-        # First element is rotation of the player in the x-z plane (ground
-        # plane) measured from the z-axis down. The second is the rotation
-        # angle from the ground plane up. Rotation is in degrees.
-        #
-        # The vertical plane rotation ranges from -90 (looking straight down) to
-        # 90 (looking straight up). The horizontal rotation range is unbounded.
-        #self.rotation = (0, 0)
+        # Instance of the player that interacts with the world.
+        self.player = player.Player(self.model, self)
 
         # Which sector the player is currently in.
         self.sector = None
@@ -52,13 +25,7 @@ class Window(pyglet.window.Window):
         # The crosshairs at the center of the screen.
         self.reticle = None
 
-        # Velocity in the y (upward) direction.
-        self.dy = 0
-
-        # Convenience list of num keys.
-        self.num_keys = [
-            key._1, key._2, key._3, key._4, key._5,
-            key._6, key._7, key._8, key._9, key._0]
+        
 
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,  # noqa: F405
@@ -68,70 +35,6 @@ class Window(pyglet.window.Window):
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / model.TICKS_PER_SEC)  # noqa: F405
-
-    def set_exclusive_mouse(self, exclusive):
-        """ If `exclusive` is True, the game will capture the mouse, if False
-        the game will ignore the mouse.
-
-        """
-        super(Window, self).set_exclusive_mouse(exclusive)
-        self.exclusive = exclusive
-
-    def get_sight_vector(self):
-        """ Returns the current line of sight vector indicating the direction
-        the player is looking.
-
-        """
-        x, y = self.player.rotation
-        # y ranges from -90 to 90, or -pi/2 to pi/2, so m ranges from 0 to 1 and
-        # is 1 when looking ahead parallel to the ground and 0 when looking
-        # straight up or down.
-        m = math.cos(math.radians(y))
-        # dy ranges from -1 to 1 and is -1 when looking straight down and 1 when
-        # looking straight up.
-        dy = math.sin(math.radians(y))
-        dx = math.cos(math.radians(x - 90)) * m
-        dz = math.sin(math.radians(x - 90)) * m
-        return (dx, dy, dz)
-
-    def get_motion_vector(self):
-        """ Returns the current motion vector indicating the velocity of the
-        player.
-
-        Returns
-        -------
-        vector : tuple of len 3
-            Tuple containing the velocity in x, y, and z respectively.
-
-        """
-        if any(self.strafe):
-            x, y = self.player.rotation
-            strafe = math.degrees(math.atan2(*self.strafe))
-            y_angle = math.radians(y)
-            x_angle = math.radians(x + strafe)
-            if self.flying:
-                m = math.cos(y_angle)
-                dy = math.sin(y_angle)
-                if self.strafe[1]:
-                    # Moving left or right.
-                    dy = 0.0
-                    m = 1
-                if self.strafe[0] > 0:
-                    # Moving backwards.
-                    dy *= -1
-                # When you are flying up or down, you have less left and right
-                # motion.
-                dx = math.cos(x_angle) * m
-                dz = math.sin(x_angle) * m
-            else:
-                dy = 0.0
-                dx = math.cos(x_angle)
-                dz = math.sin(x_angle)
-        else:
-            dy = 0.0
-            dx = 0.0
-            dz = 0.0
-        return (dx, dy, dz)
 
     def update(self, dt):
         """ This method is scheduled to be called repeatedly by the pyglet
@@ -153,110 +56,15 @@ class Window(pyglet.window.Window):
         m = 8
         dt = min(dt, 0.2)
         for _ in model.xrange(m):
-            self.player.updatePosition(self, dt / m)
+            self.player.update(dt / m)
 
-    def on_mouse_press(self, x, y, button, modifiers):
-        """ Called when a mouse button is pressed. See pyglet docs for button
-        amd modifier mappings.
-
-        Parameters
-        ----------
-        x, y : int
-            The coordinates of the mouse click. Always center of the screen if
-            the mouse is captured.
-        button : int
-            Number representing mouse button that was clicked. 1 = left button,
-            4 = right button.
-        modifiers : int
-            Number representing any modifying keys that were pressed when the
-            mouse button was clicked.
+    def set_exclusive_mouse(self, exclusive):
+        """ If `exclusive` is True, the game will capture the mouse, if False
+        the game will ignore the mouse.
 
         """
-        if self.exclusive:
-            vector = self.get_sight_vector()
-            selectedBlock, previous = self.player.hit_test(self.model.world, vector)
-            if (button == mouse.RIGHT) or \
-                    ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
-                # ON OSX, control + left click = right click.
-                if previous:
-                    self.model.add_block(previous, self.player.inventory.block)
-            elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
-                texture = self.model.world[selectedBlock]
-                if texture != model.block.STONE:
-                    self.model.remove_block(selectedBlock)
-        else:
-            self.set_exclusive_mouse(True)
-
-    def on_mouse_motion(self, x, y, dx, dy):
-        """ Called when the player moves the mouse.
-
-        Parameters
-        ----------
-        x, y : int
-            The coordinates of the mouse click. Always center of the screen if
-            the mouse is captured.
-        dx, dy : float
-            The movement of the mouse.
-
-        """
-        if self.exclusive:
-            m = 0.15
-            x, y = self.player.rotation
-            x, y = x + dx * m, y + dy * m
-            y = max(-90, min(90, y))
-            self.player.rotation = (x, y)
-
-    def on_key_press(self, symbol, modifiers):
-        """ Called when the player presses a key. See pyglet docs for key
-        mappings.
-
-        Parameters
-        ----------
-        symbol : int
-            Number representing the key that was pressed.
-        modifiers : int
-            Number representing any modifying keys that were pressed.
-
-        """
-        if symbol == key.W:
-            self.player.strafe[0] -= 1
-        elif symbol == key.S:
-            self.player.strafe[0] += 1
-        elif symbol == key.A:
-            self.player.strafe[1] -= 1
-        elif symbol == key.D:
-            self.player.strafe[1] += 1
-        elif symbol == key.SPACE:
-            if self.dy == 0:
-                self.dy = self.player.JUMP_SPEED
-        elif symbol == key.ESCAPE:
-            self.set_exclusive_mouse(False)
-        elif symbol == key.TAB:
-            self.player.flying = not self.player.flying
-        elif symbol in self.num_keys:
-            index = (symbol - self.num_keys[0]) % len(self.player.inventory.hotbar)
-            self.player.inventory.block = self.player.inventory.hotbar[index]
-
-    def on_key_release(self, symbol, modifiers):
-        """ Called when the player releases a key. See pyglet docs for key
-        mappings.
-
-        Parameters
-        ----------
-        symbol : int
-            Number representing the key that was pressed.
-        modifiers : int
-            Number representing any modifying keys that were pressed.
-
-        """
-        if symbol == key.W:
-            self.player.strafe[0] += 1
-        elif symbol == key.S:
-            self.player.strafe[0] -= 1
-        elif symbol == key.A:
-            self.player.strafe[1] += 1
-        elif symbol == key.D:
-            self.player.strafe[1] -= 1
+        super(Window, self).set_exclusive_mouse(exclusive)
+        self.exclusive = exclusive
 
     def on_resize(self, width, height):
         """ Called when the window is resized to a new `width` and `height`.
@@ -324,8 +132,8 @@ class Window(pyglet.window.Window):
         crosshairs.
 
         """
-        vector = self.get_sight_vector()
-        block = self.player.hit_test(self.model.world, vector)[0]
+        vector = self.player.get_sight_vector()
+        block = self.player.hit_test(vector)[0]
         if block:
             x, y, z = block
             vertex_data = model.cube_vertices(x, y, z, 0.51)

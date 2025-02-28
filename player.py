@@ -4,7 +4,9 @@ import sys
 import mmath
 import math
 import inventory
+import block
 
+from pyglet.gl import *  # noqa: F403
 from pyglet.window import key, mouse
 
 if sys.version_info[0] >= 3:
@@ -13,7 +15,7 @@ if sys.version_info[0] >= 3:
 
 
 class Player():
-    def __init__(self, model, *args, **kwargs):
+    def __init__(self, model, window, *args, **kwargs):
         self.WALKING_SPEED = 5
         self.FLYING_SPEED = 15
 
@@ -33,6 +35,8 @@ class Player():
         
         self.inventory = inventory.Inventory()
         self.model = model
+        self.window = window
+        self.window.push_handlers(self)
         
         # When flying gravity has no effect and speed is increased.
         self.flying = False
@@ -53,8 +57,19 @@ class Player():
         # The vertical plane rotation ranges from -90 (looking straight down) to
         # 90 (looking straight up). The horizontal rotation range is unbounded.
         self.rotation = (0, 0)
+        
+        # Whether or not the window exclusively captures the mouse.
+        self.exclusive = True
+        
+        # Velocity in the y (upward) direction.
+        self.dy = 0
+        
+        # Convenience list of num keys.
+        self.num_keys = [
+            key._1, key._2, key._3, key._4, key._5,
+            key._6, key._7, key._8, key._9, key._0]
     
-    def hit_test(self, world, vector, max_distance=8):
+    def hit_test(self, vector, max_distance=8):
         """ Line of sight search from current position. If a block is
         intersected it is returned, along with the block previously in the line
         of sight. If no block is found, return None, None.
@@ -71,45 +86,32 @@ class Player():
         """
         m = 8
         x, y, z = self.position
-        print(vector)
         dx, dy, dz = vector
         previous = None
         for _ in xrange(max_distance * m):
             key = mmath.normalize((x, y, z))
-            if key != previous and key in world:
+            if key != previous and key in self.model.world:
                 return key, previous
             previous = key
             x, y, z = x + dx / m, y + dy / m, z + dz / m
         return None, None
     
-    def updatePosition(self, window, dt):
-        """ Private implementation of the `update()` method. This is where most
-        of the motion logic lives, along with gravity and collision detection.
-
-        Parameters
-        ----------
-        dt : float
-            The change in time since the last call.
+    def get_sight_vector(self):
+        """ Returns the current line of sight vector indicating the direction
+        the player is looking.
 
         """
-        # walking
-        speed = self.FLYING_SPEED if self.flying else self.WALKING_SPEED
-        d = dt * speed # distance covered this tick.
-        dx, dy, dz = self.get_motion_vector()
-        # New position in space, before accounting for gravity.
-        dx, dy, dz = dx * d, dy * d, dz * d
-        # gravity
-        if not self.flying:
-            # Update your vertical speed: if you are falling, speed up until you
-            # hit terminal velocity; if you are jumping, slow down until you
-            # start falling.
-            window.dy -= dt * self.GRAVITY
-            window.dy = max(window.dy, -self.TERMINAL_VELOCITY)
-            dy += window.dy * dt
-        # collisions
-        x, y, z = self.position
-        x, y, z = window.model.collide(window, (x + dx, y + dy, z + dz), self.PLAYER_HEIGHT)
-        self.position = (x, y, z)
+        x, y = self.rotation
+        # y ranges from -90 to 90, or -pi/2 to pi/2, so m ranges from 0 to 1 and
+        # is 1 when looking ahead parallel to the ground and 0 when looking
+        # straight up or down.
+        m = math.cos(math.radians(y))
+        # dy ranges from -1 to 1 and is -1 when looking straight down and 1 when
+        # looking straight up.
+        dy = math.sin(math.radians(y))
+        dx = math.cos(math.radians(x - 90)) * m
+        dz = math.sin(math.radians(x - 90)) * m
+        return (dx, dy, dz)
     
     def get_motion_vector(self):
         """ Returns the current motion vector indicating the velocity of the
@@ -121,6 +123,7 @@ class Player():
             Tuple containing the velocity in x, y, and z respectively.
 
         """
+        print(self.strafe)
         if any(self.strafe):
             x, y = self.rotation
             strafe = math.degrees(math.atan2(*self.strafe))
@@ -149,3 +152,140 @@ class Player():
             dx = 0.0
             dz = 0.0
         return (dx, dy, dz)
+    
+    
+    
+    def on_mouse_press(self, x, y, button, modifiers):
+        """ Called when a mouse button is pressed. See pyglet docs for button
+        amd modifier mappings.
+
+        Parameters
+        ----------
+        x, y : int
+            The coordinates of the mouse click. Always center of the screen if
+            the mouse is captured.
+        button : int
+            Number representing mouse button that was clicked. 1 = left button,
+            4 = right button.
+        modifiers : int
+            Number representing any modifying keys that were pressed when the
+            mouse button was clicked.
+
+        """
+        if self.exclusive:
+            vector = self.get_sight_vector()
+            selectedBlock, previous = self.hit_test(vector)
+            if (button == mouse.RIGHT) or \
+                    ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
+                # ON OSX, control + left click = right click.
+                if previous:
+                    self.model.add_block(previous, self.inventory.block)
+            elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
+                texture = self.model.world[selectedBlock]
+                if texture != block.STONE:
+                    self.model.remove_block(selectedBlock)
+        else:
+            self.window.set_exclusive_mouse(True)
+    
+    
+    def on_mouse_motion(self, x, y, dx, dy):
+        """ Called when the player moves the mouse.
+
+        Parameters
+        ----------
+        x, y : int
+            The coordinates of the mouse click. Always center of the screen if
+            the mouse is captured.
+        dx, dy : float
+            The movement of the mouse.
+
+        """
+        if self.exclusive:
+            m = 0.15
+            x, y = self.rotation
+            x, y = x + dx * m, y + dy * m
+            y = max(-90, min(90, y))
+            self.rotation = (x, y)
+    
+    def update(self, dt):
+        """ Private implementation of the `update()` method. This is where most
+        of the motion logic lives, along with gravity and collision detection.
+
+        Parameters
+        ----------
+        dt : float
+            The change in time since the last call.
+
+        """
+        
+        
+        # walking
+        speed = self.FLYING_SPEED if self.flying else self.WALKING_SPEED
+        d = dt * speed # distance covered this tick.
+        dx, dy, dz = self.get_motion_vector()
+        # New position in space, before accounting for gravity.
+        dx, dy, dz = dx * d, dy * d, dz * d
+        # gravity
+        if not self.flying:
+            # Update your vertical speed: if you are falling, speed up until you
+            # hit terminal velocity; if you are jumping, slow down until you
+            # start falling.
+            self.dy -= dt * self.GRAVITY
+            self.dy = max(self.dy, -self.TERMINAL_VELOCITY)
+            dy += self.dy * dt
+        # collisions
+        x, y, z = self.position
+        x, y, z = self.model.collide(self.window, (x + dx, y + dy, z + dz), self.PLAYER_HEIGHT)
+        self.position = (x, y, z)
+    
+    def on_key_press(self, symbol, modifiers):
+        """ Called when the player presses a key. See pyglet docs for key
+        mappings.
+
+        Parameters
+        ----------
+        symbol : int
+            Number representing the key that was pressed.
+        modifiers : int
+            Number representing any modifying keys that were pressed.
+
+        """
+        if symbol == key.W:
+            self.strafe[0] -= 1
+        elif symbol == key.S:
+            self.strafe[0] += 1
+        elif symbol == key.A:
+            self.strafe[1] -= 1
+        elif symbol == key.D:
+            self.strafe[1] += 1
+        elif symbol == key.SPACE:
+            if self.dy == 0:
+                self.dy = self.JUMP_SPEED
+        elif symbol == key.ESCAPE:
+            self.window.set_exclusive_mouse(False)
+        elif symbol == key.TAB:
+            self.player.flying = not self.player.flying
+        elif symbol in self.num_keys:
+            index = (symbol - self.num_keys[0]) % len(self.inventory.hotbar)
+            self.inventory.block = self.inventory.hotbar[index]
+    
+    def on_key_release(self, symbol, modifiers):
+        """ Called when the player releases a key. See pyglet docs for key
+        mappings.
+
+        Parameters
+        ----------
+        symbol : int
+            Number representing the key that was pressed.
+        modifiers : int
+            Number representing any modifying keys that were pressed.
+
+        """
+        if symbol == key.W:
+            self.strafe[0] += 1
+        elif symbol == key.S:
+            self.strafe[0] -= 1
+        elif symbol == key.A:
+            self.strafe[1] += 1
+        elif symbol == key.D:
+            self.strafe[1] -= 1
