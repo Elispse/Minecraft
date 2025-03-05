@@ -19,6 +19,8 @@ class Player():
         self.WALKING_SPEED = 5
         self.FLYING_SPEED = 15
 
+        self.CurrentSpeed = 0
+
         self.GRAVITY = 20.0
         self.MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
         # To derive the formula for calculating jump speed, first solve
@@ -123,7 +125,7 @@ class Player():
             Tuple containing the velocity in x, y, and z respectively.
 
         """
-        print(self.strafe)
+        #print(self.strafe)
         if any(self.strafe):
             x, y = self.rotation
             strafe = math.degrees(math.atan2(*self.strafe))
@@ -235,7 +237,7 @@ class Player():
             dy += self.dy * dt
         # collisions
         x, y, z = self.position
-        x, y, z = self.model.collide(self.window, (x + dx, y + dy, z + dz), self.PLAYER_HEIGHT)
+        x, y, z = self.model.collide(self, (x + dx, y + dy, z + dz), self.PLAYER_HEIGHT)
         self.position = (x, y, z)
     
     def on_key_press(self, symbol, modifiers):
@@ -264,7 +266,7 @@ class Player():
         elif symbol == key.ESCAPE:
             self.window.set_exclusive_mouse(False)
         elif symbol == key.TAB:
-            self.player.flying = not self.player.flying
+            self.flying = not self.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory.hotbar)
             self.inventory.block = self.inventory.hotbar[index]

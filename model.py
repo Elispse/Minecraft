@@ -306,7 +306,7 @@ class Model(object):
         for sector in hide:
             self.hide_sector(sector)
     
-    def collide(self, window, position, height):
+    def collide(self, player, position, height):
         """ Checks to see if the player at the given `position` and `height`
         is colliding with any blocks in the world.
 
@@ -348,7 +348,7 @@ class Model(object):
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
                         # falling / rising.
-                        window.dy = 0
+                        player.dy = 0
                     break
         return tuple(p)
 

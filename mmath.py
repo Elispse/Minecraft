@@ -13,3 +13,11 @@ def normalize(position):
     x, y, z = position
     x, y, z = (int(round(x)), int(round(y)), int(round(z)))
     return (x, y, z)
+
+def clamp(number, min, max):
+    if number < min:
+        return min
+    elif number > max:
+        return max
+    else:
+        return number
