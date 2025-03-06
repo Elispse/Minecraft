@@ -13,6 +13,8 @@ class Window(pyglet.window.Window):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         
+        # Instance of the StateMachine
+        
         # Instance of the model that handles the world.
         self.model = model.Model()
         
@@ -61,7 +63,6 @@ class Window(pyglet.window.Window):
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
         the game will ignore the mouse.
-
         """
         super(Window, self).set_exclusive_mouse(exclusive)
         self.exclusive = exclusive
