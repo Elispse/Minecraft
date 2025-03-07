@@ -7,7 +7,6 @@ from pyglet.gl import *  # noqa: F403
 
 def setup_fog():
     """ Configure the OpenGL fog properties.
-
     """
     # Enable fog. Fog "blends a fog color with each rasterized pixel fragment's
     # post-texturing color."
@@ -43,7 +42,7 @@ def setup():
 def main():
     userWindow = window.Window(width=800, height=600, caption='Py Minecraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
-    userWindow.set_exclusive_mouse(True)
+    userWindow.set_exclusive_mouse(False)
     setup()
     pyglet.app.run() # noqa: F405
 

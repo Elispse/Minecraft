@@ -15,7 +15,7 @@ class Window(pyglet.window.Window):
         super(Window, self).__init__(*args, **kwargs)
         
        # Initialize the state machine
-        self.state_machine = StateMachine(GameState.PLAYING)
+        self.state_machine = StateMachine(GameState.MAIN_MENU)
 
         # Add states with their respective callbacks
         self.state_machine.add_state(
@@ -53,6 +53,8 @@ class Window(pyglet.window.Window):
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
             color=(0, 0, 0, 255))
         
+        self.create_main_menu()
+        
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / model.TICKS_PER_SEC)  # noqa: F405
@@ -68,6 +70,7 @@ class Window(pyglet.window.Window):
 
         """
         self.state_machine.update(dt)  # Update the current state
+
         # Existing game logic
         self.model.process_queue()
         sector = model.sectorize(self.player.position)
@@ -148,8 +151,13 @@ class Window(pyglet.window.Window):
         self.set_2d()
         self.draw_label()
         self.draw_reticle()
-        if (self.state_machine.state == GameState.PAUSED):
-            
+        # Draw the background image first
+        if self.state_machine.state == GameState.MAIN_MENU:
+            self.background_sprite.draw()
+        # Draw the UI elements (buttons, labels, etc.)
+        if self.state_machine.state == GameState.MAIN_MENU:
+            self.main_menu_batch.draw()
+        elif self.state_machine.state == GameState.PAUSED:
             self.pause_menu_batch.draw()
 
     def draw_focused_block(self):
@@ -186,7 +194,12 @@ class Window(pyglet.window.Window):
 
     def enter_main_menu(self):
         print("Entering Main Menu")
-        # Add logic to display the main menu (e.g., render buttons, text)
+        self.create_main_menu()
+        self.set_exclusive_mouse(False)
+        # Unregister pause menu buttons (if necessary)
+        for widget in self.gui_widgets:
+            if widget._batch == self.pause_menu_batch:
+                widget.enabled = False
 
 
     def update_main_menu(self, dt):
@@ -196,24 +209,21 @@ class Window(pyglet.window.Window):
     def enter_playing(self):
         print("Entering Playing State")
         self.set_exclusive_mouse(True)
-        # Add logic to initialize the game world, player, etc.
 
     def update_playing(self, dt):
         # Handle game logic (e.g., player movement, block placement)
-        #if some_condition_to_pause_game:
         pass
             
     def enter_paused(self):
-        print("Entering Paused State")
         self.create_pause_menu()
-        # Create Pause menu
+        # Unregister main menu buttons (if necessary)
+        for widget in self.gui_widgets:
+            if widget._batch == self.main_menu_batch:
+                widget.enabled = False
 
     def update_paused(self, dt):
         # Handle input for the pause menu (e.g., resume, quit)
-        #if some_condition_to_resume_game:
-        self.pause_menu_batch
-
-
+        pass
 
     def create_pause_menu(self):
         # Create a container for the pause menu
@@ -258,7 +268,6 @@ class Window(pyglet.window.Window):
             depressed=resume_depressed_image,
             batch=self.pause_menu_batch
         )
-        
         self.resume_button_label = pyglet.text.Label(
             "Resume",
             font_name="Arial",
@@ -272,32 +281,109 @@ class Window(pyglet.window.Window):
         self.resume_button.on_press = self.resume_button_pressed  # Set the callback
 
         # Create "Quit" button
-        self.quit_button = pyglet.gui.PushButton(
+        self.quittomain_button = pyglet.gui.PushButton(
             x=window_size[0] / 2 - 135,
             y=window_size[1] / 2 - 100,
             pressed=quit_pressed_image,
             depressed=quit_depressed_image,
             batch=self.pause_menu_batch,
         )
-        self.quit_button_label = pyglet.text.Label(
+        self.quittomain_button_label = pyglet.text.Label(
             "Quit to Main Menu",
+            font_name="Arial",
+            font_size=24,
+            x=self.quittomain_button.x + (self.quittomain_button.width // 2),
+            y=self.quittomain_button.y + (self.quittomain_button.height // 2),
+            anchor_x="center",
+            anchor_y="center",
+            batch=self.pause_menu_batch
+        )
+        self.quittomain_button.on_press = self.quittomain_button_pressed  # Set the callback
+
+        # Add buttons to the GUI widgets list
+        self.gui_widgets.extend([self.quittomain_button, self.resume_button])
+
+    def resume_button_pressed(self):
+        print("Resume button pressed")
+        self.state_machine.change_state(GameState.PLAYING)
+
+    def quittomain_button_pressed(self):
+        self.state_machine.change_state(GameState.MAIN_MENU)
+
+    def create_main_menu(self):
+        # Create a container for the pause menu
+        self.main_menu_batch = pyglet.graphics.Batch()
+
+        window_size = self.get_size()
+
+        # Create a semi-transparent background
+        self.background_image = pyglet.image.load('MainMenu_background.jpg')
+        self.background_sprite = pyglet.sprite.Sprite(self.background_image)
+        self.background_sprite.scale_x = self.width / self.background_image.width
+        self.background_sprite.scale_y = self.height / self.background_image.height
+
+        # Create images for the button states
+        resume_depressed_image = pyglet.image.SolidColorImagePattern((100, 100, 100, 255)).create_image(150, 50)  # Gray
+        resume_pressed_image = pyglet.image.SolidColorImagePattern((150, 150, 150, 255)).create_image(150, 50)  # Light gray
+        quit_depressed_image = pyglet.image.SolidColorImagePattern((100, 100, 100, 255)).create_image(275, 50)  # Gray
+        quit_pressed_image = pyglet.image.SolidColorImagePattern((150, 150, 150, 255)).create_image(275, 50)  # Light gray
+
+        self.splash_Text_label = pyglet.text.Label(
+            "Now in Python!!!",
+            font_name="Arial",
+            font_size=36,
+            x=window_size[0] // 2,
+            y=window_size[1] // 2 + 100,
+            anchor_x="center",
+            anchor_y="center",
+            batch=self.main_menu_batch
+        )
+
+        self.play_button = pyglet.gui.PushButton(
+            x=window_size[0] // 2 - 75,
+            y=window_size[1] // 2,
+            pressed=resume_pressed_image,
+            depressed=resume_depressed_image,
+            batch=self.main_menu_batch
+        )
+        self.play_button_label = pyglet.text.Label(
+            "Play",
+            font_name="Arial",
+            font_size=24,
+            x=self.play_button.x + (self.play_button.width // 2),
+            y=self.play_button.y + (self.play_button.height // 2),
+            anchor_x="center",
+            anchor_y="center",
+            batch=self.main_menu_batch
+        )
+        self.play_button.on_press = self.play_button_pressed  # Set the callback
+
+        # Create "Quit" button
+        self.quit_button = pyglet.gui.PushButton(
+            x=window_size[0] / 2 - 135,
+            y=window_size[1] / 2 - 100,
+            pressed=quit_pressed_image,
+            depressed=quit_depressed_image,
+            batch=self.main_menu_batch,
+        )
+        self.quit_button_label = pyglet.text.Label(
+            "Quit to Desktop",
             font_name="Arial",
             font_size=24,
             x=self.quit_button.x + (self.quit_button.width // 2),
             y=self.quit_button.y + (self.quit_button.height // 2),
             anchor_x="center",
             anchor_y="center",
-            batch=self.pause_menu_batch
+            batch=self.main_menu_batch
         )
         self.quit_button.on_press = self.quit_button_pressed  # Set the callback
 
         # Add buttons to the GUI widgets list
-        self.gui_widgets.extend([self.quit_button, self.resume_button])
+        self.gui_widgets.extend([self.quit_button, self.play_button])
 
-    def resume_button_pressed(self):
+    def play_button_pressed(self):
         print("Resume button pressed")
         self.state_machine.change_state(GameState.PLAYING)
 
     def quit_button_pressed(self):
-        print("Quit button pressed")
-        self.state_machine.change_state(GameState.MAIN_MENU)
+            pyglet.app.exit()

@@ -192,10 +192,15 @@ class Player():
             else:
                 self.window.set_exclusive_mouse(True)
         if self.state_machine.state == GameState.PAUSED:
-            # Pass the mouse press event to the GUI widgets
+            # Pass the mouse press event only to widgets in the pause menu batch
             for widget in self.window.gui_widgets:
-                widget.on_mouse_press(x, y, button, modifiers)
-
+                if hasattr(widget, '_batch') and widget._batch == self.window.pause_menu_batch:
+                    widget.on_mouse_press(x, y, button, modifiers)
+        elif self.state_machine.state == GameState.MAIN_MENU:
+            # Pass the mouse press event only to widgets in the main menu batch
+            for widget in self.window.gui_widgets:
+                if hasattr(widget, '_batch') and widget._batch == self.window.main_menu_batch:
+                    widget.on_mouse_press(x, y, button, modifiers)
 
     def on_mouse_motion(self, x, y, dx, dy):
         """ Called when the player moves the mouse.
@@ -217,6 +222,10 @@ class Player():
                 y = max(-90, min(90, y))
                 self.rotation = (x, y)
         if self.state_machine.state == GameState.PAUSED:
+            # Pass the mouse motion event to the GUI widgets
+            for widget in self.window.gui_widgets:
+                widget.on_mouse_motion(x, y, dx, dy)
+        if self.state_machine.state == GameState.MAIN_MENU:
             # Pass the mouse motion event to the GUI widgets
             for widget in self.window.gui_widgets:
                 widget.on_mouse_motion(x, y, dx, dy)
