@@ -32,7 +32,7 @@ def cube_vertices(x, y, z, n):
         x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n,  # back
     ]
 
-TEXTURE_PATH = 'texture.png'
+TEXTURE_PATH = 'Textures.png'
 
 FACES = [
         ( 0, 1, 0),

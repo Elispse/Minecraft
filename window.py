@@ -3,6 +3,7 @@ from __future__ import division
 import math
 import model
 import player
+from states import GameState, StateMachine
 
 #from collections import deque
 from pyglet.gl import *  # noqa: F403
@@ -13,19 +14,36 @@ class Window(pyglet.window.Window):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         
+       # Initialize the state machine
+        self.state_machine = StateMachine(GameState.PLAYING)
+
+        # Add states with their respective callbacks
+        self.state_machine.add_state(
+            GameState.MAIN_MENU,
+            enter_callback=self.enter_main_menu,
+            update_callback=self.update_main_menu
+        )
+        self.state_machine.add_state(
+            GameState.PLAYING,
+            enter_callback=self.enter_playing,
+            update_callback=self.update_playing
+        )
+        self.state_machine.add_state(
+            GameState.PAUSED,
+            enter_callback=self.enter_paused,
+            update_callback=self.update_paused
+        )
         # Instance of the model that handles the world.
         self.model = model.Model()
         
         # Instance of the player that interacts with the world.
-        self.player = player.Player(self.model, self)
+        self.player = player.Player(self.model, self, self.state_machine)
 
         # Which sector the player is currently in.
         self.sector = None
 
         # The crosshairs at the center of the screen.
         self.reticle = None
-
-        
 
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,  # noqa: F405
@@ -46,6 +64,8 @@ class Window(pyglet.window.Window):
             The change in time since the last call.
 
         """
+        self.state_machine.update(dt)  # Update the current state
+        # Existing game logic
         self.model.process_queue()
         sector = model.sectorize(self.player.position)
         if sector != self.sector:
@@ -61,7 +81,6 @@ class Window(pyglet.window.Window):
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
         the game will ignore the mouse.
-
         """
         super(Window, self).set_exclusive_mouse(exclusive)
         self.exclusive = exclusive
@@ -158,3 +177,32 @@ class Window(pyglet.window.Window):
         """
         glColor3d(0, 0, 0)
         self.reticle.draw(GL_LINES)
+
+    def enter_main_menu(self):
+        print("Entering Main Menu")
+        # Add logic to display the main menu (e.g., render buttons, text)
+
+
+    def update_main_menu(self, dt):
+        # Handle input for the main menu (e.g., start game, quit)
+        pass
+
+    def enter_playing(self):
+        print("Entering Playing State")
+        # Add logic to initialize the game world, player, etc.
+
+    def update_playing(self, dt):
+        # Handle game logic (e.g., player movement, block placement)
+        #if some_condition_to_pause_game:
+        pass
+            
+    def enter_paused(self):
+        print("Entering Paused State")
+        # Add logic to display the pause menu
+        pass
+
+    def update_paused(self, dt):
+        # Handle input for the pause menu (e.g., resume, quit)
+        #if some_condition_to_resume_game:
+        pass
+            
