@@ -5,6 +5,7 @@ import mmath
 import math
 import inventory
 import block
+from model import Model
 from states import GameState
 
 from pyglet.gl import *  # noqa: F403
@@ -14,7 +15,7 @@ if sys.version_info[0] >= 3:
     xrange = range
 
 class Player():
-    def __init__(self, model, window, statemachine, *args, **kwargs):
+    def __init__(self, model: Model, window, statemachine, *args, **kwargs):
         self.WALKING_SPEED = 5
         self.FLYING_SPEED = 15
 
@@ -37,8 +38,8 @@ class Player():
         self.inventory = inventory.Inventory()
         self.model = model
         self.window = window
-        self.window.push_handlers(self)
         self.state_machine = statemachine
+        self.window.push_handlers(self)
         
         # When flying gravity has no effect and speed is increased.
         self.flying = False
@@ -106,6 +107,7 @@ class Player():
         the player is looking.
 
         """
+        
         x, y = self.rotation
         # y ranges from -90 to 90, or -pi/2 to pi/2, so m ranges from 0 to 1 and
         # is 1 when looking ahead parallel to the ground and 0 when looking
@@ -177,7 +179,9 @@ class Player():
             mouse button was clicked.
 
         """
-        if self.exclusive:
+
+        if (self.state_machine.state == GameState.PLAYING):
+            if self.exclusive:
             vector = self.get_sight_vector()
             selectedBlock, previous = self.hit_test(vector)
             if (button == mouse.RIGHT) or ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
@@ -190,8 +194,17 @@ class Player():
                     self.model.remove_block(selectedBlock)
         else:
             self.window.set_exclusive_mouse(True)
-    
-    
+        if self.state_machine.state == GameState.PAUSED:
+            # Pass the mouse press event only to widgets in the pause menu batch
+            for widget in self.window.gui_widgets:
+                if hasattr(widget, '_batch') and widget._batch == self.window.pause_menu_batch:
+                    widget.on_mouse_press(x, y, button, modifiers)
+        elif self.state_machine.state == GameState.MAIN_MENU:
+            # Pass the mouse press event only to widgets in the main menu batch
+            for widget in self.window.gui_widgets:
+                if hasattr(widget, '_batch') and widget._batch == self.window.main_menu_batch:
+                    widget.on_mouse_press(x, y, button, modifiers)
+                    
     def on_mouse_motion(self, x, y, dx, dy):
         """ Called when the player moves the mouse.
 
@@ -204,12 +217,21 @@ class Player():
             The movement of the mouse.
 
         """
-        if self.exclusive:
-            m = 0.15
-            x, y = self.rotation
-            x, y = x + dx * m, y + dy * m
-            y = max(-90, min(90, y))
-            self.rotation = (x, y)
+        if (self.state_machine.state == GameState.PLAYING):
+            if self.exclusive:
+                m = 0.15
+                x, y = self.rotation
+                x, y = x + dx * m, y + dy * m
+                y = max(-90, min(90, y))
+                self.rotation = (x, y)
+        if self.state_machine.state == GameState.PAUSED:
+            # Pass the mouse motion event to the GUI widgets
+            for widget in self.window.gui_widgets:
+                widget.on_mouse_motion(x, y, dx, dy)
+        if self.state_machine.state == GameState.MAIN_MENU:
+            # Pass the mouse motion event to the GUI widgets
+            for widget in self.window.gui_widgets:
+                widget.on_mouse_motion(x, y, dx, dy)
     
     def update(self, dt):
         """ Private implementation of the `update()` method. This is where most
