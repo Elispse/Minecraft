@@ -177,8 +177,7 @@ class Player():
         if self.exclusive:
             vector = self.get_sight_vector()
             selectedBlock, previous = self.hit_test(vector)
-            if (button == mouse.RIGHT) or \
-                    ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
+            if (button == mouse.RIGHT) or ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
                     self.model.add_block(previous, self.inventory.block)
