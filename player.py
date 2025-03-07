@@ -63,8 +63,8 @@ class Player():
         # Whether or not the window exclusively captures the mouse.
         self.exclusive = True
         
-        # Velocity in the y (upward) direction.
-        self.dy = 0
+        # Velocity
+        self.velocity = [0, 0, 0]
         
         # Convenience list of num keys.
         self.num_keys = [
@@ -219,8 +219,6 @@ class Player():
             The change in time since the last call.
 
         """
-        
-        
         # walking
         speed = self.FLYING_SPEED if self.flying else self.WALKING_SPEED
         d = dt * speed # distance covered this tick.
@@ -232,12 +230,12 @@ class Player():
             # Update your vertical speed: if you are falling, speed up until you
             # hit terminal velocity; if you are jumping, slow down until you
             # start falling.
-            self.dy -= dt * self.GRAVITY
-            self.dy = max(self.dy, -self.TERMINAL_VELOCITY)
-            dy += self.dy * dt
+            self.velocity[1] -= dt * self.GRAVITY
+            self.velocity[1] = max(self.velocity[1], -self.TERMINAL_VELOCITY)
+            dy += self.velocity[1] * dt
         # collisions
         x, y, z = self.position
-        x, y, z = self.model.collide(self, (x + dx, y + dy, z + dz), self.PLAYER_HEIGHT)
+        x, y, z = self.model.collide(self, (x + dx, y + dy, z + dz))
         self.position = (x, y, z)
     
     def on_key_press(self, symbol, modifiers):
@@ -261,8 +259,8 @@ class Player():
         elif symbol == key.D:
             self.strafe[1] += 1
         elif symbol == key.SPACE:
-            if self.dy == 0:
-                self.dy = self.JUMP_SPEED
+            if self.velocity[1] == 0:
+                self.velocity[1] = self.JUMP_SPEED
         elif symbol == key.ESCAPE:
             self.window.set_exclusive_mouse(False)
         elif symbol == key.TAB:

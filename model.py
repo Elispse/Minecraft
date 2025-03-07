@@ -306,7 +306,7 @@ class Model(object):
         for sector in hide:
             self.hide_sector(sector)
     
-    def collide(self, player, position, height):
+    def collide(self, player, position):
         """ Checks to see if the player at the given `position` and `height`
         is colliding with any blocks in the world.
 
@@ -338,7 +338,7 @@ class Model(object):
                 d = (p[i] - np[i]) * face[i]
                 if d < pad:
                     continue
-                for dy in xrange(height):  # check each height
+                for dy in xrange(player.PLAYER_HEIGHT):  # check each height
                     op = list(np)
                     op[1] -= dy
                     op[i] += face[i]
@@ -348,7 +348,7 @@ class Model(object):
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
                         # falling / rising.
-                        player.dy = 0
+                        player.velocity[1] = 0
                     break
         return tuple(p)
 
