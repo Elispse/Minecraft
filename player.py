@@ -70,6 +70,9 @@ class Player():
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
             key._6, key._7, key._8, key._9, key._0]
+        
+        # Running
+        self.running = False
     
     def hit_test(self, vector, max_distance=8):
         """ Line of sight search from current position. If a block is
@@ -217,11 +220,10 @@ class Player():
         ----------
         dt : float
             The change in time since the last call.
-
         """
         # walking
         speed = self.FLYING_SPEED if self.flying else self.WALKING_SPEED
-        d = dt * speed # distance covered this tick.
+        d = dt * speed * 2 if self.running else dt * speed # distance covered this tick.
         dx, dy, dz = self.get_motion_vector()
         # New position in space, before accounting for gravity.
         dx, dy, dz = dx * d, dy * d, dz * d
@@ -232,6 +234,8 @@ class Player():
             # start falling.
             self.velocity[1] -= dt * self.GRAVITY
             self.velocity[1] = max(self.velocity[1], -self.TERMINAL_VELOCITY)
+            dy += self.velocity[1] * dt
+        else:
             dy += self.velocity[1] * dt
         # collisions
         x, y, z = self.position
@@ -261,6 +265,11 @@ class Player():
         elif symbol == key.SPACE:
             if self.velocity[1] == 0:
                 self.velocity[1] = self.JUMP_SPEED
+        elif symbol == key.LSHIFT:
+            if self.flying:
+                self.velocity[1] = -self.JUMP_SPEED
+        elif symbol == key.LCTRL:
+            self.running = True
         elif symbol == key.ESCAPE:
             self.window.set_exclusive_mouse(False)
         elif symbol == key.TAB:
@@ -289,3 +298,11 @@ class Player():
             self.strafe[1] += 1
         elif symbol == key.D:
             self.strafe[1] -= 1
+        elif symbol == key.LCTRL:
+            self.running = False
+        elif symbol == key.SPACE:
+            if self.flying:
+                self.velocity[1] = 0
+        elif symbol == key.LSHIFT:
+            if self.flying:
+                self.velocity[1] = 0
