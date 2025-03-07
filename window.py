@@ -15,7 +15,7 @@ class Window(pyglet.window.Window):
         super(Window, self).__init__(*args, **kwargs)
         
        # Initialize the state machine
-        self.state_machine = StateMachine(GameState.MAIN_MENU)
+        self.state_machine = StateMachine(GameState.PLAYING)
 
         # Add states with their respective callbacks
         self.state_machine.add_state(
@@ -185,8 +185,7 @@ class Window(pyglet.window.Window):
 
     def update_main_menu(self, dt):
         # Handle input for the main menu (e.g., start game, quit)
-        #if some_condition_to_start_game:
-            self.state_machine.change_state(GameState.PLAYING)
+        pass
 
     def enter_playing(self):
         print("Entering Playing State")
@@ -195,13 +194,15 @@ class Window(pyglet.window.Window):
     def update_playing(self, dt):
         # Handle game logic (e.g., player movement, block placement)
         #if some_condition_to_pause_game:
-            self.state_machine.change_state(GameState.PAUSED)
-
+        pass
+            
     def enter_paused(self):
         print("Entering Paused State")
         # Add logic to display the pause menu
+        pass
 
     def update_paused(self, dt):
         # Handle input for the pause menu (e.g., resume, quit)
         #if some_condition_to_resume_game:
-            self.state_machine.change_state(GameState.PLAYING)
+        pass
+            
