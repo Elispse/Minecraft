@@ -5,6 +5,7 @@ import mmath
 import math
 import inventory
 import block
+from model import Model
 from states import GameState
 
 from pyglet.gl import *  # noqa: F403
@@ -14,7 +15,7 @@ if sys.version_info[0] >= 3:
     xrange = range
 
 class Player():
-    def __init__(self, model, window, statemachine, *args, **kwargs):
+    def __init__(self, model: Model, window, statemachine, *args, **kwargs):
         self.WALKING_SPEED = 5
         self.FLYING_SPEED = 15
 
@@ -37,8 +38,8 @@ class Player():
         self.inventory = inventory.Inventory()
         self.model = model
         self.window = window
-        self.window.push_handlers(self)
         self.state_machine = statemachine
+        self.window.push_handlers(self)
         
         # When flying gravity has no effect and speed is increased.
         self.flying = False
@@ -190,8 +191,12 @@ class Player():
                         self.model.remove_block(selectedBlock)
             else:
                 self.window.set_exclusive_mouse(True)
-    
-    
+        if self.state_machine.state == GameState.PAUSED:
+            # Pass the mouse press event to the GUI widgets
+            for widget in self.window.gui_widgets:
+                widget.on_mouse_press(x, y, button, modifiers)
+
+
     def on_mouse_motion(self, x, y, dx, dy):
         """ Called when the player moves the mouse.
 
@@ -211,6 +216,10 @@ class Player():
                 x, y = x + dx * m, y + dy * m
                 y = max(-90, min(90, y))
                 self.rotation = (x, y)
+        if self.state_machine.state == GameState.PAUSED:
+            # Pass the mouse motion event to the GUI widgets
+            for widget in self.window.gui_widgets:
+                widget.on_mouse_motion(x, y, dx, dy)
     
     def update(self, dt):
         """ Private implementation of the `update()` method. This is where most

@@ -10,7 +10,7 @@ from pyglet.gl import *  # noqa: F403
 
 
 class Window(pyglet.window.Window):
-
+    
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         
@@ -33,6 +33,7 @@ class Window(pyglet.window.Window):
             enter_callback=self.enter_paused,
             update_callback=self.update_paused
         )
+        
         # Instance of the model that handles the world.
         self.model = model.Model()
         
@@ -44,6 +45,8 @@ class Window(pyglet.window.Window):
 
         # The crosshairs at the center of the screen.
         self.reticle = None
+        
+        self.gui_widgets = []
 
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,  # noqa: F405
@@ -146,7 +149,7 @@ class Window(pyglet.window.Window):
         self.draw_label()
         self.draw_reticle()
         if (self.state_machine.state == GameState.PAUSED):
-            self.create_pause_menu()
+            
             self.pause_menu_batch.draw()
 
     def draw_focused_block(self):
@@ -192,6 +195,7 @@ class Window(pyglet.window.Window):
 
     def enter_playing(self):
         print("Entering Playing State")
+        self.set_exclusive_mouse(True)
         # Add logic to initialize the game world, player, etc.
 
     def update_playing(self, dt):
@@ -201,18 +205,14 @@ class Window(pyglet.window.Window):
             
     def enter_paused(self):
         print("Entering Paused State")
+        self.create_pause_menu()
         # Create Pause menu
-        
-
-        
 
     def update_paused(self, dt):
         # Handle input for the pause menu (e.g., resume, quit)
         #if some_condition_to_resume_game:
-        
+        self.pause_menu_batch
 
-        
-        pass
 
 
     def create_pause_menu(self):
@@ -258,6 +258,7 @@ class Window(pyglet.window.Window):
             depressed=resume_depressed_image,
             batch=self.pause_menu_batch
         )
+        
         self.resume_button_label = pyglet.text.Label(
             "Resume",
             font_name="Arial",
@@ -268,13 +269,13 @@ class Window(pyglet.window.Window):
             anchor_y="center",
             batch=self.pause_menu_batch
         )
-        self.resume_button.on_press = self.resume_button_pressed
+        self.resume_button.on_press = self.resume_button_pressed  # Set the callback
 
         # Create "Quit" button
         self.quit_button = pyglet.gui.PushButton(
             x=window_size[0] / 2 - 135,
             y=window_size[1] / 2 - 100,
-            pressed=quit_pressed_image.width,
+            pressed=quit_pressed_image,
             depressed=quit_depressed_image,
             batch=self.pause_menu_batch,
         )
@@ -288,7 +289,10 @@ class Window(pyglet.window.Window):
             anchor_y="center",
             batch=self.pause_menu_batch
         )
-        self.quit_button.on_press = self.quit_button_pressed
+        self.quit_button.on_press = self.quit_button_pressed  # Set the callback
+
+        # Add buttons to the GUI widgets list
+        self.gui_widgets.extend([self.quit_button, self.resume_button])
 
     def resume_button_pressed(self):
         print("Resume button pressed")
