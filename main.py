@@ -3,6 +3,7 @@
 # from pyglet.gl import *  # noqa: F403
 # from pyglet.graphics import TextureGroup
 import window
+import shader
 from pyglet import image
 from pyglet.gl import *  # noqa: F403
 
@@ -40,6 +41,7 @@ w
     # as smooth."
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+    
     setup_fog()
 
 def main():
