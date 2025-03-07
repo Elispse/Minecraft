@@ -25,7 +25,6 @@ def setup_fog():
 
 def setup():
     """ Basic OpenGL configuration.
-
     """
     # Set the color of "clear", i.e. the sky, in rgba.
     glClearColor(0.5, 0.69, 1.0, 1) # noqa: F405
@@ -42,7 +41,7 @@ def setup():
     setup_fog()
 
 def main():
-    userWindow = window.Window(width=800, height=600, caption='Pyglet', resizable=True)
+    userWindow = window.Window(width=800, height=600, caption='Py Minecraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     userWindow.set_exclusive_mouse(True)
     setup()
