@@ -5,6 +5,7 @@ import mmath
 import math
 import inventory
 import block
+from states import GameState, StateMachine
 
 from pyglet.gl import *  # noqa: F403
 from pyglet.window import key, mouse
@@ -15,7 +16,7 @@ if sys.version_info[0] >= 3:
 
 
 class Player():
-    def __init__(self, model, window, *args, **kwargs):
+    def __init__(self, model, window, stateMachine, *args, **kwargs):
         self.WALKING_SPEED = 5
         self.FLYING_SPEED = 15
 
@@ -217,8 +218,6 @@ class Player():
             The change in time since the last call.
 
         """
-        
-        
         # walking
         speed = self.FLYING_SPEED if self.flying else self.WALKING_SPEED
         d = dt * speed # distance covered this tick.
@@ -268,7 +267,14 @@ class Player():
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory.hotbar)
             self.inventory.block = self.inventory.hotbar[index]
-    
+            
+        if self.state_machine.state == GameState.PLAYING:
+            if symbol == pyglet.window.key.ESCAPE:
+                self.state_machine.change_state(GameState.PAUSED)
+        elif self.state_machine.state == GameState.PAUSED:
+            if symbol == pyglet.window.key.ESCAPE:
+                self.state_machine.change_state(GameState.PLAYING)
+        
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
         mappings.
