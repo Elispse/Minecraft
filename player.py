@@ -71,6 +71,9 @@ class Player():
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
             key._6, key._7, key._8, key._9, key._0]
+        
+        # Running
+        self.running = False
     
     def hit_test(self, vector, max_distance=8):
         """ Line of sight search from current position. If a block is
@@ -176,21 +179,21 @@ class Player():
             mouse button was clicked.
 
         """
+
         if (self.state_machine.state == GameState.PLAYING):
             if self.exclusive:
-                vector = self.get_sight_vector()
-                selectedBlock, previous = self.hit_test(vector)
-                if (button == mouse.RIGHT) or \
-                        ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
-                    # ON OSX, control + left click = right click.
-                    if previous:
-                        self.model.add_block(previous, self.inventory.block)
-                elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
-                    texture = self.model.world[selectedBlock]
-                    if texture != block.STONE:
-                        self.model.remove_block(selectedBlock)
-            else:
-                self.window.set_exclusive_mouse(True)
+            vector = self.get_sight_vector()
+            selectedBlock, previous = self.hit_test(vector)
+            if (button == mouse.RIGHT) or ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
+                # ON OSX, control + left click = right click.
+                if previous:
+                    self.model.add_block(previous, self.inventory.block)
+            elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
+                texture = self.model.world[selectedBlock]
+                if texture != block.STONE:
+                    self.model.remove_block(selectedBlock)
+        else:
+            self.window.set_exclusive_mouse(True)
         if self.state_machine.state == GameState.PAUSED:
             # Pass the mouse press event only to widgets in the pause menu batch
             for widget in self.window.gui_widgets:
@@ -201,7 +204,7 @@ class Player():
             for widget in self.window.gui_widgets:
                 if hasattr(widget, '_batch') and widget._batch == self.window.main_menu_batch:
                     widget.on_mouse_press(x, y, button, modifiers)
-
+                    
     def on_mouse_motion(self, x, y, dx, dy):
         """ Called when the player moves the mouse.
 
@@ -238,11 +241,10 @@ class Player():
         ----------
         dt : float
             The change in time since the last call.
-
         """
         # walking
         speed = self.FLYING_SPEED if self.flying else self.WALKING_SPEED
-        d = dt * speed # distance covered this tick.
+        d = dt * speed * 2 if self.running else dt * speed # distance covered this tick.
         dx, dy, dz = self.get_motion_vector()
         # New position in space, before accounting for gravity.
         dx, dy, dz = dx * d, dy * d, dz * d
@@ -253,6 +255,8 @@ class Player():
             # start falling.
             self.velocity[1] -= dt * self.GRAVITY
             self.velocity[1] = max(self.velocity[1], -self.TERMINAL_VELOCITY)
+            dy += self.velocity[1] * dt
+        else:
             dy += self.velocity[1] * dt
         # collisions
         x, y, z = self.position
@@ -282,6 +286,13 @@ class Player():
         elif symbol == key.SPACE:
             if self.velocity[1] == 0:
                 self.velocity[1] = self.JUMP_SPEED
+        elif symbol == key.LSHIFT:
+            if self.flying:
+                self.velocity[1] = -self.JUMP_SPEED
+        elif symbol == key.LCTRL:
+            self.running = True
+        elif symbol == key.ESCAPE:
+            self.window.set_exclusive_mouse(False)
         elif symbol == key.TAB:
             self.flying = not self.flying
         elif symbol in self.num_keys:
@@ -318,3 +329,11 @@ class Player():
             self.strafe[1] += 1
         elif symbol == key.D:
             self.strafe[1] -= 1
+        elif symbol == key.LCTRL:
+            self.running = False
+        elif symbol == key.SPACE:
+            if self.flying:
+                self.velocity[1] = 0
+        elif symbol == key.LSHIFT:
+            if self.flying:
+                self.velocity[1] = 0

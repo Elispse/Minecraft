@@ -1,4 +1,4 @@
-def tex_coord(x, y, n=4):
+def tex_coord(x, y, n=16):
     """ Return the bounding vertices of the texture square.
 
     """
@@ -20,8 +20,14 @@ def tex_coords(top, bottom, side):
     result.extend(side * 4)
     return result
 
-GRASS = tex_coords((1, 0), (0, 1), (0, 0))
-DIRT = tex_coords((0, 1), (0, 1), (0, 1))
-SAND = tex_coords((1, 1), (1, 1), (1, 1))
-BRICK = tex_coords((2, 0), (2, 0), (2, 0))
-STONE = tex_coords((2, 1), (2, 1), (2, 1))
+#Row 1
+GRASS = tex_coords((0, 15), (2, 15), (3, 15))
+STONE = tex_coords((1, 15), (1, 15), (1, 15))
+DIRT = tex_coords((2, 15), (2, 15), (2, 15))
+BRICK = tex_coords((7, 15), (7, 15), (7, 15))
+WOOD_PLANK = tex_coords((4, 15), (4, 15), (4, 15))
+#Row 2
+SAND = tex_coords((2, 14), (2, 14), (2, 14))
+#Row 5
+LAMP = tex_coords((12, 11), (12, 11), (12, 11))
+PORTAL = tex_coords((13, 11), (13, 11), (13, 11))
