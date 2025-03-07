@@ -20,6 +20,8 @@ class Player():
         self.WALKING_SPEED = 5
         self.FLYING_SPEED = 15
 
+        self.CurrentSpeed = 0
+
         self.GRAVITY = 20.0
         self.MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
         # To derive the formula for calculating jump speed, first solve
@@ -62,8 +64,8 @@ class Player():
         # Whether or not the window exclusively captures the mouse.
         self.exclusive = True
         
-        # Velocity in the y (upward) direction.
-        self.dy = 0
+        # Velocity
+        self.velocity = [0, 0, 0]
         
         # Convenience list of num keys.
         self.num_keys = [
@@ -124,7 +126,7 @@ class Player():
             Tuple containing the velocity in x, y, and z respectively.
 
         """
-        print(self.strafe)
+        #print(self.strafe)
         if any(self.strafe):
             x, y = self.rotation
             strafe = math.degrees(math.atan2(*self.strafe))
@@ -229,12 +231,12 @@ class Player():
             # Update your vertical speed: if you are falling, speed up until you
             # hit terminal velocity; if you are jumping, slow down until you
             # start falling.
-            self.dy -= dt * self.GRAVITY
-            self.dy = max(self.dy, -self.TERMINAL_VELOCITY)
-            dy += self.dy * dt
+            self.velocity[1] -= dt * self.GRAVITY
+            self.velocity[1] = max(self.velocity[1], -self.TERMINAL_VELOCITY)
+            dy += self.velocity[1] * dt
         # collisions
         x, y, z = self.position
-        x, y, z = self.model.collide(self.window, (x + dx, y + dy, z + dz), self.PLAYER_HEIGHT)
+        x, y, z = self.model.collide(self, (x + dx, y + dy, z + dz))
         self.position = (x, y, z)
     
     def on_key_press(self, symbol, modifiers):
@@ -258,12 +260,12 @@ class Player():
         elif symbol == key.D:
             self.strafe[1] += 1
         elif symbol == key.SPACE:
-            if self.dy == 0:
-                self.dy = self.JUMP_SPEED
+            if self.velocity[1] == 0:
+                self.velocity[1] = self.JUMP_SPEED
         elif symbol == key.ESCAPE:
             self.window.set_exclusive_mouse(False)
         elif symbol == key.TAB:
-            self.player.flying = not self.player.flying
+            self.flying = not self.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory.hotbar)
             self.inventory.block = self.inventory.hotbar[index]
