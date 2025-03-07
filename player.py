@@ -103,6 +103,7 @@ class Player():
         the player is looking.
 
         """
+        
         x, y = self.rotation
         # y ranges from -90 to 90, or -pi/2 to pi/2, so m ranges from 0 to 1 and
         # is 1 when looking ahead parallel to the ground and 0 when looking
@@ -174,20 +175,21 @@ class Player():
             mouse button was clicked.
 
         """
-        if self.exclusive:
-            vector = self.get_sight_vector()
-            selectedBlock, previous = self.hit_test(vector)
-            if (button == mouse.RIGHT) or \
-                    ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
-                # ON OSX, control + left click = right click.
-                if previous:
-                    self.model.add_block(previous, self.inventory.block)
-            elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
-                texture = self.model.world[selectedBlock]
-                if texture != block.STONE:
-                    self.model.remove_block(selectedBlock)
-        else:
-            self.window.set_exclusive_mouse(True)
+        if (self.state_machine.state == GameState.PLAYING):
+            if self.exclusive:
+                vector = self.get_sight_vector()
+                selectedBlock, previous = self.hit_test(vector)
+                if (button == mouse.RIGHT) or \
+                        ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
+                    # ON OSX, control + left click = right click.
+                    if previous:
+                        self.model.add_block(previous, self.inventory.block)
+                elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
+                    texture = self.model.world[selectedBlock]
+                    if texture != block.STONE:
+                        self.model.remove_block(selectedBlock)
+            else:
+                self.window.set_exclusive_mouse(True)
     
     
     def on_mouse_motion(self, x, y, dx, dy):
@@ -202,12 +204,13 @@ class Player():
             The movement of the mouse.
 
         """
-        if self.exclusive:
-            m = 0.15
-            x, y = self.rotation
-            x, y = x + dx * m, y + dy * m
-            y = max(-90, min(90, y))
-            self.rotation = (x, y)
+        if (self.state_machine.state == GameState.PLAYING):
+            if self.exclusive:
+                m = 0.15
+                x, y = self.rotation
+                x, y = x + dx * m, y + dy * m
+                y = max(-90, min(90, y))
+                self.rotation = (x, y)
     
     def update(self, dt):
         """ Private implementation of the `update()` method. This is where most
