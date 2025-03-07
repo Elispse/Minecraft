@@ -182,16 +182,16 @@ class Player():
 
         if (self.state_machine.state == GameState.PLAYING):
             if self.exclusive:
-            vector = self.get_sight_vector()
-            selectedBlock, previous = self.hit_test(vector)
-            if (button == mouse.RIGHT) or ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
-                # ON OSX, control + left click = right click.
-                if previous:
-                    self.model.add_block(previous, self.inventory.block)
-            elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
-                texture = self.model.world[selectedBlock]
-                if texture != block.STONE:
-                    self.model.remove_block(selectedBlock)
+                vector = self.get_sight_vector()
+                selectedBlock, previous = self.hit_test(vector)
+                if (button == mouse.RIGHT) or ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
+                    # ON OSX, control + left click = right click.
+                    if previous:
+                        self.model.add_block(previous, self.inventory.block)
+                elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
+                    texture = self.model.world[selectedBlock]
+                    if texture != block.STONE:
+                        self.model.remove_block(selectedBlock)
         else:
             self.window.set_exclusive_mouse(True)
         if self.state_machine.state == GameState.PAUSED:
