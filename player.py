@@ -5,6 +5,7 @@ import mmath
 import math
 import inventory
 import block
+from states import GameState
 
 from pyglet.gl import *  # noqa: F403
 from pyglet.window import key, mouse
@@ -12,10 +13,8 @@ from pyglet.window import key, mouse
 if sys.version_info[0] >= 3:
     xrange = range
 
-
-
 class Player():
-    def __init__(self, model, window, *args, **kwargs):
+    def __init__(self, model, window, statemachine, *args, **kwargs):
         self.WALKING_SPEED = 5
         self.FLYING_SPEED = 15
 
@@ -39,6 +38,7 @@ class Player():
         self.model = model
         self.window = window
         self.window.push_handlers(self)
+        self.state_machine = statemachine
         
         # When flying gravity has no effect and speed is increased.
         self.flying = False
@@ -260,14 +260,23 @@ class Player():
         elif symbol == key.SPACE:
             if self.velocity[1] == 0:
                 self.velocity[1] = self.JUMP_SPEED
-        elif symbol == key.ESCAPE:
-            self.window.set_exclusive_mouse(False)
         elif symbol == key.TAB:
             self.flying = not self.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory.hotbar)
             self.inventory.block = self.inventory.hotbar[index]
-    
+
+        if self.state_machine.state == GameState.PLAYING:
+            if symbol == key.ESCAPE:
+                self.window.set_exclusive_mouse(False)
+                self.state_machine.change_state(GameState.PAUSED)
+                return pyglet.event.EVENT_HANDLED
+        elif self.state_machine.state == GameState.PAUSED:
+            if symbol == key.ESCAPE:
+                self.window.set_exclusive_mouse(True)
+                self.state_machine.change_state(GameState.PLAYING)
+                return pyglet.event.EVENT_HANDLED
+        
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
         mappings.
@@ -278,7 +287,6 @@ class Player():
             Number representing the key that was pressed.
         modifiers : int
             Number representing any modifying keys that were pressed.
-
         """
         if symbol == key.W:
             self.strafe[0] += 1

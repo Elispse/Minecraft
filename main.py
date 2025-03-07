@@ -25,7 +25,7 @@ def setup_fog():
 
 def setup():
     """ Basic OpenGL configuration.
-w
+
     """
     # Set the color of "clear", i.e. the sky, in rgba.
     glClearColor(0.5, 0.69, 1.0, 1) # noqa: F405
