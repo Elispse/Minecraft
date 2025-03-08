@@ -85,6 +85,9 @@ class Model(object):
         # _show_block() and _hide_block() calls
         self.queue = deque()
 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)  # noqa: F405
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) # noqa: F405
+
         self._initialize()
 
     def _initialize(self):

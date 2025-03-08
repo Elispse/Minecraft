@@ -35,8 +35,6 @@ def setup():
     # "is generally faster than GL_LINEAR, but it can produce textured images
     # with sharper edges because the transition between texture elements is not
     # as smooth."
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)  # noqa: F405
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) # noqa: F405
     setup_fog()
 
 def main():
