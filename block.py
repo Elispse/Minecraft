@@ -1,11 +1,12 @@
-def tex_coord(x, y, n=16):
+def tex_coord(x, y, w=32, h=16):
     """ Return the bounding vertices of the texture square.
 
     """
-    m = 1.0 / n
-    dx = x * m
-    dy = y * m
-    return dx, dy, dx + m, dy, dx + m, dy + m, dx, dy + m
+    width = 1.0 / w
+    height = 1.0 / h
+    dx = x * width
+    dy = y * height
+    return dx, dy, dx + width, dy, dx + width, dy + height, dx, dy + height
 
 def tex_coords(top, bottom, side):
     """ Return a list of the texture squares for the top, bottom and side.
@@ -21,13 +22,14 @@ def tex_coords(top, bottom, side):
     return result
 
 #Row 1
-GRASS = tex_coords((0, 15), (2, 15), (3, 15))
-STONE = tex_coords((1, 15), (1, 15), (1, 15))
-DIRT = tex_coords((2, 15), (2, 15), (2, 15))
-BRICK = tex_coords((7, 15), (7, 15), (7, 15))
+STONE = tex_coords((19, 15), (19, 15), (19, 15))
+GRASS_BLOCK = tex_coords((2, 15), (18, 14), (3, 15))
+DIRT = tex_coords((18, 14), (18, 14), (18, 14))
+BRICK = tex_coords((29, 14), (29, 14), (29, 14))
 WOOD_PLANK = tex_coords((4, 15), (4, 15), (4, 15))
 #Row 2
 SAND = tex_coords((2, 14), (2, 14), (2, 14))
 #Row 5
 LAMP = tex_coords((12, 11), (12, 11), (12, 11))
 PORTAL = tex_coords((13, 11), (13, 11), (13, 11))
+
