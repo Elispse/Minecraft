@@ -22,14 +22,14 @@ def tex_coords(top, bottom, side):
     return result
 
 #Row 1
-STONE = tex_coords((19, 15), (19, 15), (19, 15))
-GRASS_BLOCK = tex_coords((2, 15), (18, 14), (3, 15))
-DIRT = tex_coords((18, 14), (18, 14), (18, 14))
-BRICK = tex_coords((29, 14), (29, 14), (29, 14))
-WOOD_PLANK = tex_coords((4, 15), (4, 15), (4, 15))
+STONE = tex_coords((19, 15), (19, 15), (19, 15)) #correct
+GRASS_BLOCK = tex_coords((2, 15), (18, 14), (3, 15)) #correct
+DIRT = tex_coords((18, 14), (18, 14), (18, 14)) #correct
+BRICK = tex_coords((29, 14), (29, 14), (29, 14)) #correct
+WOOD_PLANK = tex_coords((21, 14), (21, 14), (21, 14)) # fixed
 #Row 2
-SAND = tex_coords((2, 14), (2, 14), (2, 14))
+SAND = tex_coords((5, 14), (5, 14), (5, 14)) #fixed
 #Row 5
-LAMP = tex_coords((12, 11), (12, 11), (12, 11))
-PORTAL = tex_coords((13, 11), (13, 11), (13, 11))
+LAMP = tex_coords((25, 7), (25, 7), (25, 7)) #fixed 
+PORTAL = tex_coords((26, 6), (26, 6), (26, 6)) #fixed
 

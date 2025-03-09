@@ -84,6 +84,9 @@ class Model(object):
         # Simple function queue implementation. The queue is populated with
         # _show_block() and _hide_block() calls
         self.queue = deque()
+        
+        #A constant running list for placed teleport blocks in the world and their positions
+        self.teleport_blocks = []
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)  # noqa: F405
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) # noqa: F405
@@ -158,6 +161,8 @@ class Model(object):
             self.remove_block(position, immediate)
         self.world[position] = texture
         self.sectors.setdefault(sectorize(position), []).append(position)
+        if texture == block.PORTAL:  # Replace with the desired block type
+            self.teleport_blocks.append(position)
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
