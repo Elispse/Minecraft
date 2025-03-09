@@ -1,3 +1,11 @@
+from opensimplex import OpenSimplex
+import random
+
+gen = OpenSimplex(random.randrange(1, 10000))
+def noise(nx, ny):
+    # Rescale from -1.0:+1.0 to 0.0:1.0
+    return gen.noise2(nx, ny) / 2.0 + 0.5
+
 def normalize(position):
     """ Accepts `position` of arbitrary precision and returns the block
     containing that position.

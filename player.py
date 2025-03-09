@@ -46,7 +46,7 @@ class Player():
         
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.position = (0, 0, 0)
+        self.position = (80, 10, 80)
         
         # First element is -1 when moving forward, 1 when moving back, and 0
         # otherwise. The second element is -1 when moving left, 1 when moving
@@ -189,9 +189,10 @@ class Player():
                     if previous:
                         self.model.add_block(previous, self.inventory.block)
                 elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
-                    texture = self.model.world[selectedBlock]
-                    if texture != block.STONE:
-                        self.model.remove_block(selectedBlock)
+                    # texture = self.model.world[selectedBlock]
+                    self.model.remove_block(selectedBlock)
+                    # if texture != block.STONE:
+                    #     self.model.remove_block(selectedBlock)
         else:
             self.window.set_exclusive_mouse(True)
         if self.state_machine.state == GameState.PAUSED:

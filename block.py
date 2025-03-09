@@ -21,15 +21,24 @@ def tex_coords(top, bottom, side):
     result.extend(side * 4)
     return result
 
+NONE = None
 #Row 1
-STONE = tex_coords((19, 15), (19, 15), (19, 15)) #correct
-GRASS_BLOCK = tex_coords((2, 15), (18, 14), (3, 15)) #correct
-DIRT = tex_coords((18, 14), (18, 14), (18, 14)) #correct
-BRICK = tex_coords((29, 14), (29, 14), (29, 14)) #correct
-WOOD_PLANK = tex_coords((21, 14), (21, 14), (21, 14)) # fixed
+STONE = tex_coords((19, 15), (19, 15), (19, 15))
+GRASS_BLOCK = tex_coords((2, 15), (18, 14), (10, 15))
+DIRT = tex_coords((18, 14), (18, 14), (18, 14))
+PODZOL = tex_coords((19, 14), (18, 14), (20, 14))
+COBBLESTONE = tex_coords((26, 15), (26, 15), (26, 15))
+OAK_WOOD_PLANK = tex_coords((21, 14), (21, 14), (21, 14))
+SPRUCE_WOOD_PLANK = tex_coords((22, 14), (22, 14), (22, 14))
+BIRCH_WOOD_PLANK = tex_coords((23, 14), (23, 14), (23, 14))
+JUNGLE_WOOD_PLANK = tex_coords((24, 14), (24, 14), (24, 14))
+ACACIA_WOOD_PLANK = tex_coords((25, 14), (25, 14), (25, 14))
+DARK_OAK_WOOD_PLANK = tex_coords((26, 14), (26, 14), (26, 14))
 #Row 2
-SAND = tex_coords((5, 14), (5, 14), (5, 14)) #fixed
+BRICK = tex_coords((29, 14), (29, 14), (29, 14))
+SAND = tex_coords((5, 14), (5, 14), (5, 14))
 #Row 5
-LAMP = tex_coords((25, 7), (25, 7), (25, 7)) #fixed 
-PORTAL = tex_coords((26, 6), (26, 6), (26, 6)) #fixed
+LAMP = tex_coords((25, 7), (25, 7), (25, 7))
+PORTAL = tex_coords((26, 6), (26, 6), (26, 6))
 
+WATER_BLOCK = tex_coords((0, 1),(0, 1),(0, 1))
