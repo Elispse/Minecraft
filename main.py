@@ -6,7 +6,7 @@ import window
 from pyglet.gl import *  # noqa: F403
 
 def main():
-    userWindow = window.Window(width=800, height=600, caption='Py Minecraft', resizable=True)
+    userWindow = window.Window(width=1280, height=720, caption='Py Minecraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     userWindow.set_exclusive_mouse(False)
     userWindow.setup()

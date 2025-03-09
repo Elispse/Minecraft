@@ -118,17 +118,19 @@ class Model(object):
                 # create a layer stone an grass everywhere.
                 if (int(elevation[z][x]*10) < 2):
                     self.add_block((x, int(elevation[z][x]*10), z), block.SAND, immediate=False)
-                elif (int(elevation[z][x] < 3)):
-                    self.add_block((x, int(elevation[z][x]*10), z), block.GRASS_BLOCK, immediate=False)
                 else:
-                    self.add_block((x, int(elevation[z][x]*10), z), block.STONE, immediate=False)
+                    self.add_block((x, int(elevation[z][x]*10), z), block.GRASS_BLOCK, immediate=False)
+                
+                for dy in xrange(0, int(elevation[z][x]*10)):
+                    if dy == 0:
+                        self.add_block((x, dy, z), block.BEDROCK, immediate=True)
+                    else:
+                        self.add_block((x, dy, z), block.DIRT, immediate=False)
                 # self.add_block((x, y - 3, z), block.STONE, immediate=False)
-                # if x in (-n, n) or z in (-n, n):
-                #     # create outer walls.
-                #     for dy in xrange(-2, 3):
-                #         self.add_block((x, y + dy, z), block.STONE, immediate=False)
-
-
+                if x in (0, n-1) or z in (0, n-1):
+                    # create outer walls.
+                    for dy in xrange(-5, 18):
+                        self.add_block((x, y + dy, z), block.STONE_SLAB, immediate=False)
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
