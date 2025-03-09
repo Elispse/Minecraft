@@ -206,8 +206,8 @@ class Window(pyglet.window.Window):
         glFogi(GL_FOG_MODE, GL_LINEAR) # noqa: F405
         # How close and far away fog starts and ends. The closer the start and end,
         # the denser the fog in the fog range.
-        glFogf(GL_FOG_START, 20.0) # noqa: F405
-        glFogf(GL_FOG_END, 60.0) # noqa: F405
+        glFogf(GL_FOG_START, 40.0) # noqa: F405
+        glFogf(GL_FOG_END, 80.0) # noqa: F405
 
     def setup(self):
         """ Basic OpenGL configuration.

@@ -11,6 +11,8 @@ from pyglet import image
 from pyglet.gl import *  # noqa: F403
 from pyglet.graphics import TextureGroup
 
+
+
 if sys.version_info[0] >= 3:
     xrange = range
 
@@ -97,37 +99,32 @@ class Model(object):
         n = 160  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
-        for x in xrange(-n, n + 1, s):
-            for z in xrange(-n, n + 1, s):
-                # create a layer stone an grass everywhere.
-                self.add_block((x, y - 2, z), block.GRASS_BLOCK, immediate=False)
-                self.add_block((x, y - 3, z), block.STONE, immediate=False)
-                if x in (-n, n) or z in (-n, n):
-                    # create outer walls.
-                    for dy in xrange(-2, 3):
-                        self.add_block((x, y + dy, z), block.STONE, immediate=False)
+        f = 2 # frequency
+        
+        elevation = []
+        for h in xrange(n*2):
+            elevation.append([0] * n*2)
+            for w in xrange(n):
+                nx = w/n - 0.5
+                ny = h/n - 0.5
+                elevation[h][w] = mmath.noise(f * nx, f * ny)
 
-        # generate the hills randomly
-        o = n - 5
-        for _ in xrange(120):
-            a = random.randint(-o, o)  # x position of the hill
-            b = random.randint(-o, o)  # z position of the hill
-            c = -1  # base of the hill
-            h = random.randint(1, 4)  # height of the hill
-            s = random.randint(4, 8)  # 2 * s is the side length of the hill
-            d = 1  # how quickly to taper off the hills
-            t = block.GRASS_BLOCK # random.choice([block.GRASS, block.SAND, block.BRICK])
-            for y in xrange(c, c + h):
-                for x in xrange(a - s, a + s + 1):
-                    for z in xrange(b - s, b + s + 1):
-                        if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:
-                            continue
-                        if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
-                            continue
-                        if (not self.exposed((x, y, z))):
-                            t = block.DIRT
-                        self.add_block((x, y, z), t, immediate=False)
-                s -= d  # decrement side length so hills taper off
+        
+        for x in xrange(0, n, s):
+            for z in xrange(0, n, s):
+                # create a layer stone an grass everywhere.
+                if (int(elevation[z][x]*10) < 2):
+                    self.add_block((x, int(elevation[z][x]*10), z), block.SAND, immediate=False)
+                elif (int(elevation[z][x] < 3)):
+                    self.add_block((x, int(elevation[z][x]*10), z), block.GRASS_BLOCK, immediate=False)
+                else:
+                    self.add_block((x, int(elevation[z][x]*10), z), block.STONE, immediate=False)
+                # self.add_block((x, y - 3, z), block.STONE, immediate=False)
+                # if x in (-n, n) or z in (-n, n):
+                #     # create outer walls.
+                #     for dy in xrange(-2, 3):
+                #         self.add_block((x, y + dy, z), block.STONE, immediate=False)
+
 
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
@@ -154,6 +151,8 @@ class Model(object):
             Whether or not to draw the block immediately.
 
         """
+        if (texture == block.NONE):
+            return
         if position in self.world:
             self.remove_block(position, immediate)
         self.world[position] = texture
@@ -229,7 +228,7 @@ class Model(object):
         texture : list of len 3
             The coordinates of the texture squares. Use `tex_coords()` to
             generate.
-
+            
         """
         x, y, z = position
         vertex_data = cube_vertices(x, y, z, 0.5)
@@ -330,7 +329,7 @@ class Model(object):
         # have to count as a collision. If 0, touching terrain at all counts as
         # a collision. If .49, you sink into the ground, as if walking through
         # tall grass. If >= .5, you'll fall through the ground.
-        pad = 0.25
+        pad = 0.0
         p = list(position)
         np = mmath.normalize(position)
         for face in FACES:  # check all surrounding blocks
