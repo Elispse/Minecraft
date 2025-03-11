@@ -45,3 +45,6 @@ PORTAL = tex_coords((26, 6), (26, 6), (26, 6))
 STONE_SLAB = tex_coords((27, 14),(27, 14),(28, 14))
 
 WATER_BLOCK = tex_coords((0, 1),(0, 1),(0, 1))
+
+OAK_LOG = tex_coords((4, 12), (4, 12), (3, 12))
+OAK_LEAF = tex_coords((7, 10), (7, 10), (7, 10))

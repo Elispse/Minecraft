@@ -15,7 +15,7 @@ if sys.version_info[0] >= 3:
     xrange = range
 
 class Player():
-    def __init__(self, model: Model, window, statemachine, *args, **kwargs):
+    def __init__(self, model: Model, window, statemachine, position = (80, 10, 80), *args, **kwargs):
         self.WALKING_SPEED = 5
         self.FLYING_SPEED = 15
 
@@ -46,7 +46,7 @@ class Player():
         
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.position = (80, 10, 80)
+        self.position = position
         
         # First element is -1 when moving forward, 1 when moving back, and 0
         # otherwise. The second element is -1 when moving left, 1 when moving

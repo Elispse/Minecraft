@@ -112,22 +112,47 @@ class Model(object):
         
         for x in xrange(0, n, s):
             for z in xrange(0, n, s):
-                # create a layer stone an grass everywhere.
-                if (int(elevation[z][x]*10) < 2):
-                    self.add_block((x, int(elevation[z][x]*10), z), block.SAND, immediate=False)
-                else:
-                    self.add_block((x, int(elevation[z][x]*10), z), block.GRASS_BLOCK, immediate=False)
+                y = int(elevation[z][x]*10)
+                block_texture = block.STONE
+                if (y < 2):
+                    block_texture = block.WATER_BLOCK
+                if (y < 3):
+                    block_texture = block.SAND
+                elif (y < 8):
+                    block_texture = block.GRASS_BLOCK
+                self.add_block((x, y, z), block_texture, immediate=False)
                 
-                for dy in xrange(0, int(elevation[z][x]*10)):
-                    if dy == 0:
-                        self.add_block((x, dy, z), block.BEDROCK, immediate=True)
-                    else:
-                        self.add_block((x, dy, z), block.DIRT, immediate=False)
+                if block_texture == block.GRASS_BLOCK and random.random() < 0.01:
+                    self.grow_tree((x, y, z))
+                
+                self.add_block((x, 0, z), block.BEDROCK, immediate=True)
+                for dy in xrange(1, y):
+                    self.add_block((x, dy, z), block.DIRT, immediate=False)
                 # self.add_block((x, y - 3, z), block.STONE, immediate=False)
                 if x in (0, n-1) or z in (0, n-1):
                     # create outer walls.
                     for dy in xrange(-5, 18):
                         self.add_block((x, y + dy, z), block.STONE_SLAB, immediate=False)
+
+    def grow_tree(self, position):
+        y = random.randrange(3, 6)
+        for ty in xrange(0, y):
+            self.add_block((position[0], position[1] + ty, position[2]), block.OAK_LOG, immediate=False)
+        
+        for tx in xrange(-2, 3, 1):
+            for tz in xrange(-2, 3, 1):
+                if tx in (1, -1) or tz in (1, -1):
+                    self.add_block((position[0]+tx, position[1] + y, position[2]+tz), block.OAK_LEAF, immediate=False)
+                elif tx == 0 or tz == 0:
+                    self.add_block((position[0]+tx, position[1] + y, position[2]+tz), block.OAK_LEAF, immediate=False)
+                self.add_block((position[0]+tx, position[1] + y + 1, position[2]+tz), block.OAK_LEAF, immediate=False)
+        
+        for tx in xrange(-1, 2, 1):
+            for tz in xrange(-1, 2, 1):
+                self.add_block((position[0]+tx, position[1] + y+2, position[2]+tz), block.OAK_LEAF, immediate=False)
+                if tx == 0 or tz == 0:
+                    self.add_block((position[0]+tx, position[1] + y+3, position[2]+tz), block.OAK_LEAF, immediate=False)
+
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
@@ -138,6 +163,18 @@ class Model(object):
             if (x + dx, y + dy, z + dz) not in self.world:
                 return True
         return False
+    
+    def exposed_faces(self, position):
+        """ Returns any exposed faces.
+        """
+        faces = []
+        
+        x, y, z = position
+        for dx, dy, dz in FACES:
+            if (x + dx, y + dy, z + dz) not in self.world:
+                faces.append((x + dx, y + dy, z + dz))
+        return faces
+        
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
