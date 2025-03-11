@@ -99,7 +99,10 @@ class Model(object):
         n = 160  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
-        f = 2 # frequency
+        f = 4 # frequency
+        a = (1, 0.5, 0.334) # amplitude layers
+        exp = 2 # elevation exponent
+        adj = 1.2 # adjustment to pre-power elevation value
         
         elevation = []
         for h in xrange(n*2):
@@ -107,33 +110,56 @@ class Model(object):
             for w in xrange(n):
                 nx = w/n - 0.5
                 ny = h/n - 0.5
-                elevation[h][w] = mmath.noise(f * nx, f * ny)
+                e = a[0] * mmath.noise(f * nx, f * ny)
+                e += a[1] * mmath.noise((f * 2) * nx + 5.3, (f * 2) * ny + 9.1)
+                e += a[2] * mmath.noise((f * 4) * nx + 17.8, (f * 4) * ny + 23.5)
+                e = e / (a[0] + a[1] + a[2])
+                elevation[h][w] = pow(e * adj, exp)
 
         
         for x in xrange(0, n, s):
             for z in xrange(0, n, s):
                 y = int(elevation[z][x]*10)
-                block_texture = block.STONE
-                if (y < 2):
-                    block_texture = block.WATER_BLOCK
-                if (y < 3):
-                    block_texture = block.SAND
-                elif (y < 8):
-                    block_texture = block.GRASS_BLOCK
+                if y <= 0:
+                    y = 1
+                block_texture = self.set_environment(elevation[z][x])
                 self.add_block((x, y, z), block_texture, immediate=False)
                 
+                # Add tree
                 if block_texture == block.GRASS_BLOCK and random.random() < 0.01:
                     self.grow_tree((x, y, z))
                 
+                # Add bottom of the map
                 self.add_block((x, 0, z), block.BEDROCK, immediate=True)
-                for dy in xrange(1, y):
-                    self.add_block((x, dy, z), block.DIRT, immediate=False)
-                # self.add_block((x, y - 3, z), block.STONE, immediate=False)
+                
+                if y > 1:
+                    # Fill below the surface
+                    if block_texture == block.STONE:
+                        for dy in xrange(1, y):
+                            self.add_block((x, dy, z), block.STONE, immediate=False)
+                    else:
+                        midpoint = int(y / 2)
+                        for dy in xrange(1, y):
+                            if dy >= midpoint:
+                                self.add_block((x, dy, z), block.DIRT, immediate=False)
+                            else:
+                                self.add_block((x, dy, z), block.STONE, immediate=False)
+                
+                # create outer walls.
                 if x in (0, n-1) or z in (0, n-1):
-                    # create outer walls.
                     for dy in xrange(-5, 18):
                         self.add_block((x, y + dy, z), block.STONE_SLAB, immediate=False)
 
+    def set_environment(self, elevation):
+        block_texture = block.STONE
+        if (elevation < 0.1):
+            block_texture = block.WATER_BLOCK
+        elif (elevation < 0.2):
+                block_texture = block.SAND
+        elif (elevation < 0.6):
+            block_texture = block.GRASS_BLOCK
+        return block_texture
+    
     def grow_tree(self, position):
         y = random.randrange(3, 6)
         for ty in xrange(0, y):
