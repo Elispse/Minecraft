@@ -164,6 +164,7 @@ class Model(object):
         self.sectors.setdefault(sectorize(position), []).append(position)
         if texture == block.PORTAL:  # Replace with the desired block type
             self.teleport_blocks.append(position)
+            print("portal added to list")
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
@@ -182,6 +183,9 @@ class Model(object):
         """
         del self.world[position]
         self.sectors[sectorize(position)].remove(position)
+        if position in self.teleport_blocks:
+            self.teleport_blocks.remove(position)
+            print("teleporter removed")
         if immediate:
             if position in self.shown:
                 self.hide_block(position)
