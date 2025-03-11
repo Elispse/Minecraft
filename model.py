@@ -86,6 +86,10 @@ class Model(object):
         # Simple function queue implementation. The queue is populated with
         # _show_block() and _hide_block() calls
         self.queue = deque()
+        
+        #A constant running list for placed teleport blocks in the world and their positions
+        self.teleport_blocks = {}
+        self.count = 0
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)  # noqa: F405
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) # noqa: F405
@@ -222,6 +226,10 @@ class Model(object):
             self.remove_block(position, immediate)
         self.world[position] = texture
         self.sectors.setdefault(sectorize(position), []).append(position)
+        if texture == block.PORTAL:
+            self.teleport_blocks[self.count] = position
+            self.count += 1
+            print("portal added to list at" + (str)(position) + (str)(self.count))
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
@@ -240,6 +248,16 @@ class Model(object):
         """
         del self.world[position]
         self.sectors[sectorize(position)].remove(position)
+        for index, valueP in list(self.teleport_blocks.items()):
+            if valueP == position: #is value correct position of block to be removed
+                del self.teleport_blocks[index]
+                self.count -= 1
+                print("teleporter removed at" + (str)(position) + (str)(self.count))
+                break
+        
+         #Fix indexes of remaining items
+        self.teleport_blocks = {i: pos for i, pos in enumerate(self.teleport_blocks.values())}
+        
         if immediate:
             if position in self.shown:
                 self.hide_block(position)
@@ -397,27 +415,54 @@ class Model(object):
         pad = 0.0
         p = list(position)
         np = mmath.normalize(position)
+        
         for face in FACES:  # check all surrounding blocks
             for i in xrange(3):  # check each dimension independently
                 if not face[i]:
                     continue
+                
                 # How much overlap you have with this dimension.
                 d = (p[i] - np[i]) * face[i]
                 if d < pad:
                     continue
+                
                 for dy in xrange(player.PLAYER_HEIGHT):  # check each height
                     op = list(np)
                     op[1] -= dy
                     op[i] += face[i]
                     if tuple(op) not in self.world:
                         continue
+                    
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
                         # falling / rising.
                         player.velocity[1] = 0
                     break
+        for dx,dy,dz in FACES:       
+            check_position = (p[0] + dx, p[1]-1, p[2] + dz)
+            if check_position in self.teleport_blocks.values():
+                self.teleport_player(player, check_position)
+                return player.position  # return new position
+            
         return tuple(p)
+    
+    def teleport_player(self, player, c_position): #teleports to next block in list
+        if not self.teleport_blocks:
+            return  # No teleport blocks exist
+
+        # Find the current index of the block
+        current_index = None
+        for key, value in self.teleport_blocks.items():
+            if value == c_position:
+                current_index = key
+                break
+
+        if current_index is not None:
+            next_index = (current_index + 1) % len(self.teleport_blocks)  # Cycle to next position
+            next_position = self.teleport_blocks[next_index]
+            player.position = (next_position[0] + 1, next_position[1] + 2,next_position[2])  # Teleport player (offset by 1 block on x and y)
+            print(f"Teleported to " +(str)(next_position))
 
     def _enqueue(self, func, *args):
         """ Add `func` to the internal queue.
