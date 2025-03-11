@@ -56,7 +56,6 @@ class Window(pyglet.window.Window):
             self.sector = sector
         m = 8
         dt = min(dt, 0.2)
-        shader.updateSky()
         for _ in model.xrange(m):
             self.player.update(dt / m)
 
@@ -121,15 +120,16 @@ class Window(pyglet.window.Window):
 
         """
         self.clear()
+        shader.updateSky()
         self.set_3d()
         glColor3d(1, 1, 1)  # noqa: F405
+        
         self.model.batch.draw()
         self.draw_focused_block()
         self.set_2d()
         self.draw_label()
         self.draw_reticle()
         
-        shader.draw()
 
     def draw_focused_block(self):
         """ Draw black edges around the block that is currently under the

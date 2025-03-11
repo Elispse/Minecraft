@@ -5,6 +5,7 @@ import random
 import time
 import block
 import mmath
+import shader
 
 from collections import deque
 from pyglet import image
@@ -124,22 +125,34 @@ class Model(object):
                         self.add_block((x, y, z), t, immediate=False)
                 s -= d  # decrement side length so hills taper off
 
+    def exposed_faces(self, position):
+        faceArray = []
+        faceNormals = []
+        x, y, z = position
+        for dx, dy, dz in FACES:
+            if (x + dx, y + dy, z + dz) not in self.world:
+                faceIndex = FACES.index((dx, dy, dz))
+                currentBlockVerts = cube_vertices(x,y,z, 0.5)
+                desiredVerts = currentBlockVerts[faceIndex:faceIndex + 3]
+                faceArray.append(desiredVerts)
+                faceNormals.append((dx, dy, dz))
+        return faceArray, faceNormals
     
-
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
-
         """
         x, y, z = position
         for dx, dy, dz in FACES:
             if (x + dx, y + dy, z + dz) not in self.world:
+                faceVerts, faceNormals = self.exposed_faces(position)
+                shader.render_faces(faceVerts, faceNormals, [])
                 return True
         return False
+    
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
-
         Parameters
         ----------
         position : tuple of len 3
@@ -149,7 +162,6 @@ class Model(object):
             generate.
         immediate : bool
             Whether or not to draw the block immediately.
-
         """
         if position in self.world:
             self.remove_block(position, immediate)
@@ -240,14 +252,12 @@ class Model(object):
     def hide_block(self, position, immediate=True):
         """ Hide the block at the given `position`. Hiding does not remove the
         block from the world.
-
         Parameters
         ----------
         position : tuple of len 3
             The (x, y, z) position of the block to hide.
         immediate : bool
             Whether or not to immediately remove the block from the canvas.
-
         """
         self.shown.pop(position)
         if immediate:
@@ -257,14 +267,12 @@ class Model(object):
 
     def _hide_block(self, position):
         """ Private implementation of the 'hide_block()` method.
-
         """
         self._shown.pop(position).delete()
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are
         drawn to the canvas.
-
         """
         for position in self.sectors.get(sector, []):
             if position not in self.shown and self.exposed(position):
@@ -273,7 +281,6 @@ class Model(object):
     def hide_sector(self, sector):
         """ Ensure all blocks in the given sector that should be hidden are
         removed from the canvas.
-
         """
         for position in self.sectors.get(sector, []):
             if position in self.shown:
@@ -283,7 +290,6 @@ class Model(object):
         """ Move from sector `before` to sector `after`. A sector is a
         contiguous x, y sub-region of world. Sectors are used to speed up
         world rendering.
-
         """
         before_set = set()
         after_set = set()
