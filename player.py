@@ -196,6 +196,7 @@ class Player():
                     if previous:
                         texture = self.model.world[selectedBlock]
                         self.inventory.hotbar[self.inventory.index] = texture
+                        self.inventory.get_selected_block()
         else:
             self.window.set_exclusive_mouse(True)
         if self.state_machine.state == GameState.PAUSED:
@@ -312,6 +313,9 @@ class Player():
             if symbol == key.ESCAPE:
                 self.window.set_exclusive_mouse(True)
                 self.state_machine.change_state(GameState.PLAYING)
+                return pyglet.event.EVENT_HANDLED
+        elif self.state_machine.state == GameState.MAIN_MENU:
+            if symbol == key.ESCAPE:
                 return pyglet.event.EVENT_HANDLED
         
     def on_key_release(self, symbol, modifiers):

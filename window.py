@@ -172,6 +172,7 @@ class Window(pyglet.window.Window):
         self.draw_label()
         self.draw_reticle()
         self.inventory_bar[0].draw()  # Draw the inventory bar batch
+        self.draw_bottom_right_image("Steve_Hand.png").draw()
         # Draw the background image first
         if self.state_machine.state == GameState.MAIN_MENU:
             self.background_sprite.draw()
@@ -435,7 +436,7 @@ class Window(pyglet.window.Window):
         self.gui_widgets.extend([self.quit_button, self.play_button])
 
     def create_inventory_bar(self):
-        """Create the inventory bar with slots and block textures, close to Minecraft's style."""
+        """Create the inventory bar with only block textures."""
         slot_size = 40
         slot_spacing = 5
         num_slots = len(self.player.inventory.hotbar)
@@ -446,22 +447,27 @@ class Window(pyglet.window.Window):
 
         inventory_batch = pyglet.graphics.Batch()
 
-        # Background for the inventory bar (a semi-transparent dark background)
-        bar_bg = pyglet.shapes.Rectangle(
-            x=start_x - 5, y=start_y - 5, 
-            width=total_width + 10, height=slot_size + 10, 
-            color=(0, 0, 0), batch=inventory_batch
+        # Create groups for z-order control
+        background_group = pyglet.graphics.OrderedGroup(0)
+        foreground_group = pyglet.graphics.OrderedGroup(1)
+
+        # Highlight the selected slot (background layer)
+        selected_slot_index = self.player.inventory.index
+        selected_slot_border = pyglet.shapes.Rectangle(
+            x=start_x + selected_slot_index * (slot_size + slot_spacing) - 2,
+            y=start_y - 2,
+            width=slot_size + 4,
+            height=slot_size + 4,
+            color=(255, 223, 64), 
+            batch=inventory_batch, 
+            group=background_group
         )
-        bar_bg.opacity = 150  # Make the background semi-transparent
+        selected_slot_border.opacity = 180  # Softer effect
 
         # Slots and their corresponding textures
         slots = []
         for i in range(num_slots):
             slot_x = start_x + i * (slot_size + slot_spacing)
-            slot_rect = pyglet.shapes.Rectangle(
-                x=slot_x, y=start_y, width=slot_size, height=slot_size,
-                color=(200, 200, 200), batch=inventory_batch
-            )
 
             # Block texture
             block_texture = self.player.inventory.hotbar[i]
@@ -472,37 +478,34 @@ class Window(pyglet.window.Window):
                 texture_region = self.block_texture_atlas.get_region(
                     pixel_coords[0],
                     pixel_coords[1],
-                    16, 16  # width and height of the texture
+                    16, 16
                 )
                 texture_sprite = sprite.Sprite(
                     img=texture_region,
-                    x=slot_x + 4, y=start_y + 4, batch=inventory_batch
+                    x=slot_x + 4, y=start_y + 4, 
+                    batch=inventory_batch,
+                    group=foreground_group  # Textures drawn in front
                 )
-                texture_sprite.scale = (slot_size - 8) / 32 
+                texture_sprite.scale = (slot_size - 8) / 16
+            slots.append(texture_sprite)
 
-            slots.append((slot_rect, texture_sprite))
+        return inventory_batch, slots, selected_slot_border
 
-        # Highlight the selected slot
-        selected_slot_index = self.player.inventory.index
-        selected_slot_rect = pyglet.shapes.Rectangle(
-            x=start_x + selected_slot_index * (slot_size + slot_spacing) - 2,
-            y=start_y - 2,
-            width=slot_size + 4,
-            height=slot_size + 4,
-            color=(255, 255, 255), batch=inventory_batch
+    def draw_bottom_right_image(self, image_path):
+        texture_image = pyglet.image.load(image_path)
+
+        image_width = texture_image.width
+        image_height = texture_image.height
+        x_position = self.width - image_width  
+        y_position = 0
+
+        # Create and draw the sprite
+        texture_sprite = sprite.Sprite(
+            img=texture_image,
+            x=x_position,
+            y=y_position
         )
-        selected_slot_rect.opacity = 255 
-
-        selected_slot_border = pyglet.shapes.Rectangle(
-            x=start_x + selected_slot_index * (slot_size + slot_spacing) - 2,
-            y=start_y - 2,
-            width=slot_size + 4,
-            height=slot_size + 4,
-            color=(255, 223, 64), batch=inventory_batch 
-        )
-        selected_slot_border.opacity = 255 
-
-        return inventory_batch, slots, selected_slot_rect, selected_slot_border
+        return texture_sprite
 
     def play_button_pressed(self):
         print("Resume button pressed")

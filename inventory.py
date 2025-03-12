@@ -14,4 +14,5 @@ class Inventory:
 
     def get_selected_block(self):
         """Get the block in the currently selected slot."""
+        self.dispatcher.dispatch_event(BLOCK_CHANGED)
         return self.hotbar[self.index]
