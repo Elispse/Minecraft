@@ -4,10 +4,14 @@ import math
 import model
 import player
 import random
+import block
 from states import GameState, StateMachine
+from EventDispatcher import EventDispatcher, BLOCK_CHANGED
 
 #from collections import deque
 from pyglet.gl import *  # noqa: F403
+from pyglet import image
+from pyglet import sprite
 
 
 class Window(pyglet.window.Window):
@@ -17,9 +21,7 @@ class Window(pyglet.window.Window):
         
         # Initialize the state machine
         self.state_machine = StateMachine(GameState.MAIN_MENU)
-        self.command_text = ""
-        self.player_position = (0, 0, 0)  # Placeholder for player position
-        
+
         # Add states with their respective callbacks
         self.state_machine.add_state(
             GameState.MAIN_MENU,
@@ -36,17 +38,27 @@ class Window(pyglet.window.Window):
             enter_callback=self.enter_paused,
             update_callback=self.update_paused
         )
-        self.state_machine.add_state(
-            GameState.COMMAND_LINE, 
-            enter_callback=self.enter_command_mode, 
-            exit_callback=self.exit_command_mode
-        )
         
         # Instance of the model that handles the world.
         self.model = model.Model()
+
+        # Load the block texture atlas
+        self.block_texture = image.load('Textures.png')
+        self.block_texture_atlas = self.block_texture.get_texture()
+
+        glEnable(self.block_texture_atlas.target)        # typically target is GL_TEXTURE_2D
+        glBindTexture(self.block_texture_atlas.target, self.block_texture_atlas.id)
+
+        # Initialize the inventory bar
+
+        self.dispatcher = EventDispatcher()
+
+        self.dispatcher.register_listener(BLOCK_CHANGED, self.on_block_changed)
         
         # Instance of the player that interacts with the world.
         self.player = player.Player(self.model, self, self.state_machine)
+        
+        self.inventory_bar = self.create_inventory_bar()
 
         # Which sector the player is currently in.
         self.sector = None
@@ -61,14 +73,6 @@ class Window(pyglet.window.Window):
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
             color=(0, 0, 0, 255))
         
-        self.command_prompt_label = pyglet.text.Label(
-            "Command: ",
-            font_name="Arial",
-            font_size=18,
-            x=10, y=10,
-            anchor_x="left", anchor_y="bottom",
-            color=(255, 255, 255, 255)
-        )
         self.create_main_menu()
         
         # This call schedules the `update()` method to be called
@@ -167,6 +171,8 @@ class Window(pyglet.window.Window):
         self.set_2d()
         self.draw_label()
         self.draw_reticle()
+        self.inventory_bar[0].draw()  # Draw the inventory bar batch
+        self.draw_bottom_right_image("Steve_Hand.png").draw()
         # Draw the background image first
         if self.state_machine.state == GameState.MAIN_MENU:
             self.background_sprite.draw()
@@ -175,11 +181,7 @@ class Window(pyglet.window.Window):
             self.main_menu_batch.draw()
         elif self.state_machine.state == GameState.PAUSED:
             self.pause_menu_batch.draw()
-        elif self.state_machine.state == GameState.COMMAND_LINE:
-            self.command_prompt_label.text = 'Command: ' + self.command_text
-            self.command_batch.draw()
-            self.command_prompt_label.draw()
-            
+
     def draw_focused_block(self):
         """ Draw black edges around the block that is currently under the
         crosshairs.
@@ -252,6 +254,7 @@ class Window(pyglet.window.Window):
         for widget in self.gui_widgets:
             if widget._batch == self.pause_menu_batch:
                 widget.enabled = False
+
 
     def update_main_menu(self, dt):
         # Handle input for the main menu (e.g., start game, quit)
@@ -432,53 +435,110 @@ class Window(pyglet.window.Window):
         # Add buttons to the GUI widgets list
         self.gui_widgets.extend([self.quit_button, self.play_button])
 
+    def create_inventory_bar(self):
+        """Create the inventory bar with only block textures."""
+        slot_size = 40
+        slot_spacing = 5
+        num_slots = len(self.player.inventory.hotbar)
+
+        total_width = num_slots * slot_size + (num_slots - 1) * slot_spacing
+        start_x = (self.width - total_width) // 2
+        start_y = 20
+
+        inventory_batch = pyglet.graphics.Batch()
+
+        # Create groups for z-order control
+        background_group = pyglet.graphics.OrderedGroup(0)
+        foreground_group = pyglet.graphics.OrderedGroup(1)
+
+        # Highlight the selected slot (background layer)
+        selected_slot_index = self.player.inventory.index
+        selected_slot_border = pyglet.shapes.Rectangle(
+            x=start_x + selected_slot_index * (slot_size + slot_spacing) - 2,
+            y=start_y - 2,
+            width=slot_size + 4,
+            height=slot_size + 4,
+            color=(255, 223, 64), 
+            batch=inventory_batch, 
+            group=background_group
+        )
+        selected_slot_border.opacity = 180  # Softer effect
+
+        # Slots and their corresponding textures
+        slots = []
+        for i in range(num_slots):
+            slot_x = start_x + i * (slot_size + slot_spacing)
+
+            # Block texture
+            block_texture = self.player.inventory.hotbar[i]
+            if block_texture != block.NONE:
+                reversed_coords = self.reverse_tex_coords_list(block_texture)
+                pixel_coords = self.get_texture_pixel_position(reversed_coords["side"][0][0], reversed_coords["side"][0][1])
+                # Get the correct texture region for the block
+                texture_region = self.block_texture_atlas.get_region(
+                    pixel_coords[0],
+                    pixel_coords[1],
+                    16, 16
+                )
+                texture_sprite = sprite.Sprite(
+                    img=texture_region,
+                    x=slot_x + 4, y=start_y + 4, 
+                    batch=inventory_batch,
+                    group=foreground_group  # Textures drawn in front
+                )
+                texture_sprite.scale = (slot_size - 8) / 16
+            slots.append(texture_sprite)
+
+        return inventory_batch, slots, selected_slot_border
+
+    def draw_bottom_right_image(self, image_path):
+        texture_image = pyglet.image.load(image_path)
+
+        image_width = texture_image.width
+        image_height = texture_image.height
+        x_position = self.width - image_width  
+        y_position = 0
+
+        # Create and draw the sprite
+        texture_sprite = sprite.Sprite(
+            img=texture_image,
+            x=x_position,
+            y=y_position
+        )
+        return texture_sprite
+
     def play_button_pressed(self):
         print("Resume button pressed")
         self.state_machine.change_state(GameState.PLAYING)
 
     def quit_button_pressed(self):
             pyglet.app.exit()
-            
-    def enter_command_mode(self):
-        self.command_text = ""
-        self.create_command_line()
-        print("Entered command mode. Type a command and press Enter.")
 
-    def exit_command_mode(self):
-        print("Exited command mode.")
-        
-    def create_command_line(self):
-        # Create a container for the pause menu
-        self.command_batch = pyglet.graphics.Batch()
-        window_size = self.get_size()
+    def on_block_changed(self):
+        """Update the inventory bar when the inventory changes."""
+        self.inventory_bar = self.create_inventory_bar()
 
-        # Create a semi-transparent background
-        self.background = pyglet.shapes.Rectangle(
-            x=0, 
-            y=0, 
-            width=window_size[0], 
-            height=window_size[1]/8,
-            color=(0, 0, 0), 
-            batch=self.command_batch
-        )
-        self.background.opacity = 25
-        
-        
-    def on_text(self, text):
-        """Handles text input in command mode."""
-        if self.state_machine.state == GameState.COMMAND_LINE:
-            self.command_text += text
-            print(self.command_text)
+    def reverse_tex_coord(self, dx, dy, w=32, h=16):
+        """ Reverse the texture coordinates back to (x, y). """
+        width = 1.0 / w
+        height = 1.0 / h
+        x = int(dx / width)
+        y = int(dy / height)
+        return x, y
 
-    def process_command(self, command):
-        """Processes player commands."""
-        parts = command.split()
-        if len(parts) == 4 and parts[0].lower() == "teleport":
-            try:
-                x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
-                self.player.position = (x, y, z)  # Move player
-                print(f"Teleported to ({x}, {y}, {z})")
-            except ValueError:
-                print("Invalid coordinates!")
-        else:
-            print("Invalid command. Use: teleport x y z")
+    def reverse_tex_coords_list(self, coord_list, w=32, h=16):
+        """ Reverse a full list of texture coordinates back to their original (x, y) pairs for a 3D block model. """
+        result = {
+            "top": [],
+            "bottom": [],
+            "side": []  # Only one side entry since it's repeated
+        }
+        result["top"].append(self.reverse_tex_coord(coord_list[0], coord_list[1], w, h))
+        result["bottom"].append(self.reverse_tex_coord(coord_list[8], coord_list[9], w, h))
+        result["side"].append(self.reverse_tex_coord(coord_list[16], coord_list[17], w, h))
+        return result
+    
+    def get_texture_pixel_position(self, column, row, texture_size=16):
+        x = column * texture_size
+        y = row * texture_size
+        return (x, y)
