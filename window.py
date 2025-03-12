@@ -21,7 +21,9 @@ class Window(pyglet.window.Window):
         
         # Initialize the state machine
         self.state_machine = StateMachine(GameState.MAIN_MENU)
-
+        self.command_text = ""
+        self.player_position = (0, 0, 0)  # Placeholder for player position
+        
         # Add states with their respective callbacks
         self.state_machine.add_state(
             GameState.MAIN_MENU,
@@ -37,6 +39,11 @@ class Window(pyglet.window.Window):
             GameState.PAUSED,
             enter_callback=self.enter_paused,
             update_callback=self.update_paused
+        )
+        self.state_machine.add_state(
+            GameState.COMMAND_LINE, 
+            enter_callback=self.enter_command_mode, 
+            exit_callback=self.exit_command_mode
         )
         
         # Instance of the model that handles the world.
@@ -181,7 +188,9 @@ class Window(pyglet.window.Window):
             self.main_menu_batch.draw()
         elif self.state_machine.state == GameState.PAUSED:
             self.pause_menu_batch.draw()
-
+        elif self.state_machine.state == GameState.COMMAND_LINE:
+            self.command_batch.draw()
+            
     def draw_focused_block(self):
         """ Draw black edges around the block that is currently under the
         crosshairs.
@@ -254,7 +263,6 @@ class Window(pyglet.window.Window):
         for widget in self.gui_widgets:
             if widget._batch == self.pause_menu_batch:
                 widget.enabled = False
-
 
     def update_main_menu(self, dt):
         # Handle input for the main menu (e.g., start game, quit)
@@ -542,3 +550,57 @@ class Window(pyglet.window.Window):
         x = column * texture_size
         y = row * texture_size
         return (x, y)
+
+            
+    def enter_command_mode(self):
+        self.command_text = ""
+        self.create_command_line()
+        print("Entered command mode. Type a command and press Enter.")
+
+    def exit_command_mode(self):
+        print("Exited command mode.")
+        
+    def create_command_line(self):
+        # Create a container for the pause menu
+        self.command_batch = pyglet.graphics.Batch()
+        window_size = self.get_size()
+
+        # Create a semi-transparent background
+        self.background = pyglet.shapes.Rectangle(
+            x=0, 
+            y=0, 
+            width=window_size[0], 
+            height=window_size[1]/8,
+            color=(0, 0, 0), 
+            batch=self.command_batch
+        )
+        self.background.opacity = 25
+        
+        self.command_prompt_label = pyglet.text.Label(
+            "Command: " + self.command_text,
+            font_name="Arial",
+            font_size=18,
+            x=10, y=10,
+            anchor_x="left", anchor_y="bottom",
+            color=(255, 255, 255, 255),
+            batch= self.command_batch
+        )
+        
+    def on_text(self, text):
+        """Handles text input in command mode."""
+        if self.state_machine.state == GameState.COMMAND_LINE:
+            self.command_text += text
+            print(self.command_text)
+
+    def process_command(self, command):
+        """Processes player commands."""
+        parts = command.split()
+        if len(parts) == 4 and parts[0].lower() == "teleport":
+            try:
+                x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+                self.player.position = (x, y, z)  # Move player
+                print(f"Teleported to ({x}, {y}, {z})")
+            except ValueError:
+                print("Invalid coordinates!")
+        else:
+            print("Invalid command. Use: teleport x y z")
