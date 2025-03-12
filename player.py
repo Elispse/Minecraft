@@ -247,26 +247,27 @@ class Player():
         dt : float
             The change in time since the last call.
         """
-        # walking
-        speed = self.FLYING_SPEED if self.flying else self.WALKING_SPEED
-        d = dt * speed * 2 if self.running else dt * speed # distance covered this tick.
-        dx, dy, dz = self.get_motion_vector()
-        # New position in space, before accounting for gravity.
-        dx, dy, dz = dx * d, dy * d, dz * d
-        # gravity
-        if not self.flying:
-            # Update your vertical speed: if you are falling, speed up until you
-            # hit terminal velocity; if you are jumping, slow down until you
-            # start falling.
-            self.velocity[1] -= dt * self.GRAVITY
-            self.velocity[1] = max(self.velocity[1], -self.TERMINAL_VELOCITY)
-            dy += self.velocity[1] * dt
-        else:
-            dy += self.velocity[1] * dt
-        # collisions
-        x, y, z = self.position
-        x, y, z = self.model.collide(self, (x + dx, y + dy, z + dz))
-        self.position = (x, y, z)
+        if self.state_machine.state == GameState.PLAYING:
+            # walking
+            speed = self.FLYING_SPEED if self.flying else self.WALKING_SPEED
+            d = dt * speed * 2 if self.running else dt * speed # distance covered this tick.
+            dx, dy, dz = self.get_motion_vector()
+            # New position in space, before accounting for gravity.
+            dx, dy, dz = dx * d, dy * d, dz * d
+            # gravity
+            if not self.flying:
+                # Update your vertical speed: if you are falling, speed up until you
+                # hit terminal velocity; if you are jumping, slow down until you
+                # start falling.
+                self.velocity[1] -= dt * self.GRAVITY
+                self.velocity[1] = max(self.velocity[1], -self.TERMINAL_VELOCITY)
+                dy += self.velocity[1] * dt
+            else:
+                dy += self.velocity[1] * dt
+            # collisions
+            x, y, z = self.position
+            x, y, z = self.model.collide(self, (x + dx, y + dy, z + dz))
+            self.position = (x, y, z)
     
     def on_key_press(self, symbol, modifiers):
         """ Called when the player presses a key. See pyglet docs for key
@@ -309,19 +310,28 @@ class Player():
                 self.window.set_exclusive_mouse(False)
                 self.state_machine.change_state(GameState.PAUSED)
                 return pyglet.event.EVENT_HANDLED
-            if symbol == key.C:
+            elif symbol == key.C:
                 self.state_machine.change_state(GameState.COMMAND_LINE)
+                return pyglet.event.EVENT_HANDLED
         elif self.state_machine.state == GameState.PAUSED:
             if symbol == key.ESCAPE:
                 self.window.set_exclusive_mouse(True)
                 self.state_machine.change_state(GameState.PLAYING)
                 return pyglet.event.EVENT_HANDLED
+            elif symbol == key.C:
+                self.state_machine.change_state(GameState.COMMAND_LINE)
+                return pyglet.event.EVENT_HANDLED
         elif self.state_machine.state == GameState.COMMAND_LINE:
             if symbol == key.BACKSPACE:
                 self.window.command_text = self.window.command_text[:-1]
+                return pyglet.event.EVENT_HANDLED
             elif symbol == key.ENTER: 
                 self.window.process_command(self.window.command_text)
                 self.state_machine.change_state(GameState.PLAYING)
+                return pyglet.event.EVENT_HANDLED
+            elif symbol == key.ESCAPE:
+                self.window.set_exclusive_mouse(False)
+                self.state_machine.change_state(GameState.PAUSED)
                 return pyglet.event.EVENT_HANDLED
 
         
