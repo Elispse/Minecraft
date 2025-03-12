@@ -38,6 +38,11 @@ class Window(pyglet.window.Window):
             enter_callback=self.enter_paused,
             update_callback=self.update_paused
         )
+        self.state_machine.add_state(
+            GameState.COMMAND_LINE,
+            enter_callback=self.enter_paused,
+            update_callback=self.update_paused
+        )
         
         # Instance of the model that handles the world.
         self.model = model.Model()
