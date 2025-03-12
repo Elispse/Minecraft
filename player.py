@@ -301,7 +301,7 @@ class Player():
             self.flying = not self.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory.hotbar)
-            self.inventory.index = index
+            self.inventory.set_index(index)  # Update the selected slot
 
         if self.state_machine.state == GameState.PLAYING:
             if symbol == key.ESCAPE:

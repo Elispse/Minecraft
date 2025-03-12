@@ -4,10 +4,14 @@ import math
 import model
 import player
 import random
+import block
 from states import GameState, StateMachine
+from EventDispatcher import EventDispatcher, BLOCK_CHANGED
 
 #from collections import deque
 from pyglet.gl import *  # noqa: F403
+from pyglet import image
+from pyglet import sprite
 
 
 class Window(pyglet.window.Window):
@@ -35,17 +39,26 @@ class Window(pyglet.window.Window):
             update_callback=self.update_paused
         )
         
-        # Instance of Event Dispatcher
+        # Instance of the model that handles the world.
+        self.model = model.Model()
+
+        # Load the block texture atlas
+        self.block_texture = image.load('Textures.png')
+        self.block_texture_atlas = self.block_texture.get_texture()
+
+        glEnable(self.block_texture_atlas.target)        # typically target is GL_TEXTURE_2D
+        glBindTexture(self.block_texture_atlas.target, self.block_texture_atlas.id)
+
+        # Initialize the inventory bar
+
         self.dispatcher = EventDispatcher()
 
         self.dispatcher.register_listener(BLOCK_CHANGED, self.on_block_changed)
-        # Instance of the model that handles the world.
-        self.model = model.Model()
         
         # Instance of the player that interacts with the world.
         self.player = player.Player(self.model, self, self.state_machine)
-        while (self.model.collide(self.player, self.player.position) < self.player.position):
-            self.player.position = (self.player.position[0], self.player.position[1]+1, self.player.position[2])
+
+        self.inventory_bar = self.create_inventory_bar()
 
         # Which sector the player is currently in.
         self.sector = None
@@ -158,6 +171,7 @@ class Window(pyglet.window.Window):
         self.set_2d()
         self.draw_label()
         self.draw_reticle()
+        self.inventory_bar[0].draw()  # Draw the inventory bar batch
         # Draw the background image first
         if self.state_machine.state == GameState.MAIN_MENU:
             self.background_sprite.draw()
@@ -420,6 +434,76 @@ class Window(pyglet.window.Window):
         # Add buttons to the GUI widgets list
         self.gui_widgets.extend([self.quit_button, self.play_button])
 
+    def create_inventory_bar(self):
+        """Create the inventory bar with slots and block textures, close to Minecraft's style."""
+        slot_size = 40
+        slot_spacing = 5
+        num_slots = len(self.player.inventory.hotbar)
+
+        total_width = num_slots * slot_size + (num_slots - 1) * slot_spacing
+        start_x = (self.width - total_width) // 2
+        start_y = 20
+
+        inventory_batch = pyglet.graphics.Batch()
+
+        # Background for the inventory bar (a semi-transparent dark background)
+        bar_bg = pyglet.shapes.Rectangle(
+            x=start_x - 5, y=start_y - 5, 
+            width=total_width + 10, height=slot_size + 10, 
+            color=(0, 0, 0), batch=inventory_batch
+        )
+        bar_bg.opacity = 150  # Make the background semi-transparent
+
+        # Slots and their corresponding textures
+        slots = []
+        for i in range(num_slots):
+            slot_x = start_x + i * (slot_size + slot_spacing)
+            slot_rect = pyglet.shapes.Rectangle(
+                x=slot_x, y=start_y, width=slot_size, height=slot_size,
+                color=(200, 200, 200), batch=inventory_batch
+            )
+
+            # Block texture
+            block_texture = self.player.inventory.hotbar[i]
+            if block_texture != block.NONE:
+                reversed_coords = self.reverse_tex_coords_list(block_texture)
+                pixel_coords = self.get_texture_pixel_position(reversed_coords["side"][0][0], reversed_coords["side"][0][1])
+                # Get the correct texture region for the block
+                texture_region = self.block_texture_atlas.get_region(
+                    pixel_coords[0],
+                    pixel_coords[1],
+                    16, 16  # width and height of the texture
+                )
+                texture_sprite = sprite.Sprite(
+                    img=texture_region,
+                    x=slot_x + 4, y=start_y + 4, batch=inventory_batch
+                )
+                texture_sprite.scale = (slot_size - 8) / 32 
+
+            slots.append((slot_rect, texture_sprite))
+
+        # Highlight the selected slot
+        selected_slot_index = self.player.inventory.index
+        selected_slot_rect = pyglet.shapes.Rectangle(
+            x=start_x + selected_slot_index * (slot_size + slot_spacing) - 2,
+            y=start_y - 2,
+            width=slot_size + 4,
+            height=slot_size + 4,
+            color=(255, 255, 255), batch=inventory_batch
+        )
+        selected_slot_rect.opacity = 255 
+
+        selected_slot_border = pyglet.shapes.Rectangle(
+            x=start_x + selected_slot_index * (slot_size + slot_spacing) - 2,
+            y=start_y - 2,
+            width=slot_size + 4,
+            height=slot_size + 4,
+            color=(255, 223, 64), batch=inventory_batch 
+        )
+        selected_slot_border.opacity = 255 
+
+        return inventory_batch, slots, selected_slot_rect, selected_slot_border
+
     def play_button_pressed(self):
         print("Resume button pressed")
         self.state_machine.change_state(GameState.PLAYING)
@@ -428,7 +512,30 @@ class Window(pyglet.window.Window):
             pyglet.app.exit()
 
     def on_block_changed(self):
-        self.create_inventory_bar()
+        """Update the inventory bar when the inventory changes."""
+        self.inventory_bar = self.create_inventory_bar()
 
-    def create_inventory_bar(self):
-        pass
+    def reverse_tex_coord(self, dx, dy, w=32, h=16):
+        """ Reverse the texture coordinates back to (x, y). """
+        width = 1.0 / w
+        height = 1.0 / h
+        x = int(dx / width)
+        y = int(dy / height)
+        return x, y
+
+    def reverse_tex_coords_list(self, coord_list, w=32, h=16):
+        """ Reverse a full list of texture coordinates back to their original (x, y) pairs for a 3D block model. """
+        result = {
+            "top": [],
+            "bottom": [],
+            "side": []  # Only one side entry since it's repeated
+        }
+        result["top"].append(self.reverse_tex_coord(coord_list[0], coord_list[1], w, h))
+        result["bottom"].append(self.reverse_tex_coord(coord_list[8], coord_list[9], w, h))
+        result["side"].append(self.reverse_tex_coord(coord_list[16], coord_list[17], w, h))
+        return result
+    
+    def get_texture_pixel_position(self, column, row, texture_size=16):
+        x = column * texture_size
+        y = row * texture_size
+        return (x, y)
