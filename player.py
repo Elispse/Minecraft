@@ -304,12 +304,22 @@ class Player():
                 self.window.set_exclusive_mouse(False)
                 self.state_machine.change_state(GameState.PAUSED)
                 return pyglet.event.EVENT_HANDLED
+            if symbol == key.C:
+                self.window.set_exclusive_mouse(True)
+                self.state_machine.change_state(GameState.COMMAND_LINE)
         elif self.state_machine.state == GameState.PAUSED:
             if symbol == key.ESCAPE:
                 self.window.set_exclusive_mouse(True)
                 self.state_machine.change_state(GameState.PLAYING)
                 return pyglet.event.EVENT_HANDLED
-        
+        elif self.state_machine.state == GameState.COMMAND_LINE:
+            if symbol == key.BACKSPACE:
+                self.command_text = self.window.command_text[:-1]
+            elif symbol == key.ENTER: 
+                self.window.process_command(self.window.command_text)
+                self.state_machine.change_state(GameState.PLAYING)
+                return pyglet.event.EVENT_HANDLED
+    
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
         mappings.
