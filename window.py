@@ -63,6 +63,14 @@ class Window(pyglet.window.Window):
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
             color=(0, 0, 0, 255))
         
+        self.command_prompt_label = pyglet.text.Label(
+            "Command: ",
+            font_name="Arial",
+            font_size=18,
+            x=10, y=10,
+            anchor_x="left", anchor_y="bottom",
+            color=(255, 255, 255, 255)
+        )
         self.create_main_menu()
         
         # This call schedules the `update()` method to be called
@@ -170,7 +178,9 @@ class Window(pyglet.window.Window):
         elif self.state_machine.state == GameState.PAUSED:
             self.pause_menu_batch.draw()
         elif self.state_machine.state == GameState.COMMAND_LINE:
+            self.command_prompt_label.text = 'Command: ' + self.command_text
             self.command_batch.draw()
+            self.command_prompt_label.draw()
             
     def draw_focused_block(self):
         """ Draw black edges around the block that is currently under the
@@ -455,15 +465,6 @@ class Window(pyglet.window.Window):
         )
         self.background.opacity = 25
         
-        self.command_prompt_label = pyglet.text.Label(
-            "Command: " + self.command_text,
-            font_name="Arial",
-            font_size=18,
-            x=10, y=10,
-            anchor_x="left", anchor_y="bottom",
-            color=(255, 255, 255, 255),
-            batch= self.command_batch
-        )
         
     def on_text(self, text):
         """Handles text input in command mode."""
