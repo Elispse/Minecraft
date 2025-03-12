@@ -187,11 +187,15 @@ class Player():
                 if (button == mouse.RIGHT) or ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                     # ON OSX, control + left click = right click.
                     if previous:
-                        self.model.add_block(previous, self.inventory.block)
+                        self.model.add_block(previous, self.inventory.hotbar[self.inventory.index])
                 elif button == pyglet.window.mouse.LEFT and selectedBlock:  # noqa: F405
                     texture = self.model.world[selectedBlock]
                     if texture != block.BEDROCK:
                         self.model.remove_block(selectedBlock)
+                elif button == mouse.MIDDLE:
+                    if previous:
+                        texture = self.model.world[selectedBlock]
+                        self.inventory.hotbar[self.inventory.index] = texture
         else:
             self.window.set_exclusive_mouse(True)
         if self.state_machine.state == GameState.PAUSED:
@@ -297,7 +301,7 @@ class Player():
             self.flying = not self.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory.hotbar)
-            self.inventory.block = self.inventory.hotbar[index]
+            self.inventory.index = index
 
         if self.state_machine.state == GameState.PLAYING:
             if symbol == key.ESCAPE:

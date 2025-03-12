@@ -100,7 +100,8 @@ class Model(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        n = 160  # 1/2 width and height of world
+        n = 160  # 1/2 width and length of world
+        h = 0 # y-level for bottom layer (bedrock)
         s = 1  # step size
         y = 0  # initial y height
         f = 4 # frequency
@@ -109,16 +110,16 @@ class Model(object):
         adj = 1.2 # adjustment to pre-power elevation value
         
         elevation = []
-        for h in xrange(n*2):
+        for l in xrange(n*2):
             elevation.append([0] * n*2)
             for w in xrange(n):
                 nx = w/n - 0.5
-                ny = h/n - 0.5
+                ny = l/n - 0.5
                 e = a[0] * mmath.noise(f * nx, f * ny)
                 e += a[1] * mmath.noise((f * 2) * nx + 5.3, (f * 2) * ny + 9.1)
                 e += a[2] * mmath.noise((f * 4) * nx + 17.8, (f * 4) * ny + 23.5)
                 e = e / (a[0] + a[1] + a[2])
-                elevation[h][w] = pow(e * adj, exp)
+                elevation[l][w] = pow(e * adj, exp)
 
         
         for x in xrange(0, n, s):
@@ -132,18 +133,20 @@ class Model(object):
                 # Add tree
                 if block_texture == block.GRASS_BLOCK and random.random() < 0.01:
                     self.grow_tree((x, y, z))
+                elif block_texture == block.SAND and random.random() < 0.005:
+                    self.grow_cactus((x, y, z))
                 
                 # Add bottom of the map
-                self.add_block((x, 0, z), block.BEDROCK, immediate=True)
+                self.add_block((x, -h, z), block.BEDROCK, immediate=True)
                 
                 if y > 1:
                     # Fill below the surface
                     if block_texture == block.STONE:
-                        for dy in xrange(1, y):
+                        for dy in xrange(h+1, y):
                             self.add_block((x, dy, z), block.STONE, immediate=False)
                     else:
                         midpoint = int(y / 2)
-                        for dy in xrange(1, y):
+                        for dy in xrange(h+1, y):
                             if dy >= midpoint:
                                 self.add_block((x, dy, z), block.DIRT, immediate=False)
                             else:
@@ -166,7 +169,7 @@ class Model(object):
     
     def grow_tree(self, position):
         y = random.randrange(3, 6)
-        for ty in xrange(0, y):
+        for ty in xrange(1, y):
             self.add_block((position[0], position[1] + ty, position[2]), block.OAK_LOG, immediate=False)
         
         for tx in xrange(-2, 3, 1):
@@ -183,6 +186,10 @@ class Model(object):
                 if tx == 0 or tz == 0:
                     self.add_block((position[0]+tx, position[1] + y+3, position[2]+tz), block.OAK_LEAF, immediate=False)
 
+    def grow_cactus(self, position):
+        for ty in xrange(1, random.randrange(2, 5)):
+            self.add_block((position[0], position[1] + ty, position[2]), block.CACTUS, immediate=False)
+    
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
