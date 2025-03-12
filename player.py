@@ -322,7 +322,7 @@ class Player():
                 return pyglet.event.EVENT_HANDLED
         elif self.state_machine.state == GameState.COMMAND_LINE:
             if symbol == key.BACKSPACE:
-                self.command_text = self.window.command_text[:-1]
+                self.window.command_text = self.window.command_text[:-1]
             elif symbol == key.ENTER: 
                 self.window.process_command(self.window.command_text)
                 self.state_machine.change_state(GameState.PLAYING)
