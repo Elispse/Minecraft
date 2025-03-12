@@ -190,6 +190,23 @@ class Model(object):
         for ty in xrange(1, random.randrange(2, 5)):
             self.add_block((position[0], position[1] + ty, position[2]), block.CACTUS, immediate=False)
     
+    def exposed_faces(self, position):
+        faceArray = []
+        faceNormals = []
+        x, y, z = position
+        for dx, dy, dz in FACES:
+            if (x + dx, y + dy, z + dz) not in self.world:
+                faceIndex = (FACES.index((dx, dy, dz)) * 12)
+                currentBlockVerts = cube_vertices(x,y,z, 0.5)
+                index = 0
+                while(index < 4):
+                    desiredVerts = currentBlockVerts[faceIndex + index*3:faceIndex + index*3 + 3]
+                    faceArray.append((desiredVerts))
+                    faceNormals.append((dx, dy, dz))
+                    index += 1
+                
+        return faceArray, faceNormals
+    
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
@@ -201,16 +218,6 @@ class Model(object):
                 return True
         return False
     
-    def exposed_faces(self, position):
-        """ Returns any exposed faces.
-        """
-        faces = []
-        
-        x, y, z = position
-        for dx, dy, dz in FACES:
-            if (x + dx, y + dy, z + dz) not in self.world:
-                faces.append((x + dx, y + dy, z + dz))
-        return faces
         
 
     def add_block(self, position, texture, immediate=True):
