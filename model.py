@@ -131,11 +131,15 @@ class Model(object):
         x, y, z = position
         for dx, dy, dz in FACES:
             if (x + dx, y + dy, z + dz) not in self.world:
-                faceIndex = FACES.index((dx, dy, dz))
+                faceIndex = (FACES.index((dx, dy, dz)) * 12)
                 currentBlockVerts = cube_vertices(x,y,z, 0.5)
-                desiredVerts = currentBlockVerts[faceIndex:faceIndex + 3]
-                faceArray.append(desiredVerts)
-                faceNormals.append((dx, dy, dz))
+                index = 0
+                while(index < 4):
+                    desiredVerts = currentBlockVerts[faceIndex + index*3:faceIndex + index*3 + 3]
+                    faceArray.append((desiredVerts))
+                    faceNormals.append((dx, dy, dz))
+                    index += 1
+                
         return faceArray, faceNormals
     
     def exposed(self, position):

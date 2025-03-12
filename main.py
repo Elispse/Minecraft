@@ -8,7 +8,7 @@ from pyglet import image
 from pyglet.gl import *  # noqa: F403
 
 def setup_fog():
-    """ Configure the OpenGL fog properties.wwwwwwwwwwwwwwwwwwww
+    """ Configure the OpenGL fog properties.
     """
     # Enable fog. Fog "blends a fog color with each rasterized pixel fragment's
     # post-texturing color."
@@ -28,7 +28,7 @@ def setup():
     """ Basic OpenGL configuration.
     """
     # Set the color of "clear", i.e. the sky, in rgba.
-    glClearColor(0.5, 0.69, 1.0, 1)
+    glClearColor(0.5, 0.69, 1.0, 1)  # noqa: F405
     # Enable culling (not rendering) of back-facing facets -- facets that aren't
     # visible to you.
     glEnable(GL_CULL_FACE)

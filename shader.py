@@ -27,24 +27,18 @@ out vec3 diffuseLight;
 out vec2 textureCoord;
 
 uniform vec3 Ld; // light intensity
-uniform vec4 lightPosition;
 
-//uniform vec3 Kd; // reflectivity
-
-uniform mat4 modelViewMatrix;
-uniform mat3 normalMatrix;
-uniform mat4 projectionMatrix;
 uniform mat4 MVP;
+uniform mat3 normalMatrix;
+uniform vec4 lightPosition;
 
 void main()
 {
     vec3 tNorm = normalize( normalMatrix * vertexNormal );
-    vec4 eyeCoords = modelViewMatrix * vec4(vertexPosition,1.0);
-    vec3 s = normalize(vec3(lightPosition - eyeCoords));
+    vec3 s = normalize(vec3(lightPosition));
     
     diffuseLight = Ld * max( dot (s , tNorm), 0.0 );
     textureCoord = vertexTextureCoord;
-    
     gl_Position = MVP * vec4(vertexPosition,1.0);
 }
 """
@@ -59,11 +53,11 @@ layout (location = 0) out vec4 fragColor;
 
 uniform sampler2D textureSampler;
 
-void main()\n
-{\n
+void main()
+{
     vec4 texColor = texture(textureSampler, textureCoord);
-    fragColor = vec4(diffuseLight, 1.0) * texColor;
-}\n
+    fragColor = vec4(1, 0, 0, 1); //vec4(diffuseLight, 1.0) * texColor;
+}
 """
 
 def updateSky():
@@ -176,9 +170,6 @@ def loadTexture(imagePath):
     glGenTextures(1, ctypes.byref(texture_id))
     glBindTexture(GL_TEXTURE_2D, texture_id)
     
-    import os
-    print("Texture exists:", os.path.exists("texture.png"))
-    
     # Loading Image
     image = pyglet.image.load(imagePath) # <---
     image_data = image.get_data("RGB", image.width * 3) # Mess with this stuff maybe fellas
@@ -195,30 +186,32 @@ def loadTexture(imagePath):
 glEnable(GL_DEPTH_TEST)
 glEnable(GL_CULL_FACE)
 glCullFace(GL_BACK)
+#glMatrixMode(GL_PROJECTION)
+#glMatrixMode(GL_MODELVIEW)
+gluPerspective(45, 800/600, 0.1, 100)
+glLoadIdentity()
 
-buffers = {}
 program = loadProgram(vertexSource, fragmentSource)
-
 texture = loadTexture("texture.png")
+buffers = {}
 
 # ------------------ suffering
 
 def render_faces(faceVerts, faceNormals, texData):
     # Create Vertex Data
-    
     for index, vertData in enumerate(faceVerts):
         vertex_data = vertData
         normal_data = faceNormals[index]
         
-        textureCoords = block.GRASS
-        # texCoords = [
-        #     0.0, 0.0,  # Bottom-left
-        #     1.0, 0.0,  # Bottom-right
-        #     1.0, 1.0,  # Top-right
-        #     0.0, 1.0   # Top-left
-        # ]
+        # textureCoords = block.GRASS
+        textureCoords = [
+            0.0, 0.0,  # Bottom-left
+            1.0, 0.0,  # Bottom-right
+            1.0, 1.0,  # Top-right
+            0.0, 1.0   # Top-left
+        ]
         
-        index_data = [0, 1, 2, 3]
+        index_data = [0, 1, 2, 0, 2, 3]
         
         if "vertex_buffer" not in buffers:
             buffers["vertex_buffer"] = GLuint()
@@ -254,24 +247,35 @@ def render_faces(faceVerts, faceNormals, texData):
         
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, texture)
-        locationTextureSampler = glGetUniformLocation(program, b"textureSampler")
-        glUniform1i(locationTextureSampler, 0) # Change which texture is bound based on block face and normal?
         
         # -- UNIFORMS
+        status = ctypes.c_long(-1)
+        glGetProgramiv(program, GL_ACTIVE_UNIFORMS, status)
+        length = ctypes.c_long(-1)
+        glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, length)
+        
+        # for i in range(length.value):
+        #     name_buffer = ctypes.create_string_buffer(str(status.value))
+        #     size = GLint()
+        #     type = GLenum()
+        #     glGetActiveUniform(program, i, length.value, None, size, type, name_buffer.value)
+        #     print(f"Uniform {i}: {name_buffer.value}")
+        
+        location_textureSampler = glGetUniformLocation(program, b"textureSampler")
+        glUniform1i(location_textureSampler, 0) # Change which texture is bound based on block face and normal?
         
         # Get uniform locations
+        ctypes.c_char_p("".encode('utf-8'))
         location_lightPos = glGetUniformLocation(program, b"lightPosition")
         location_Ld = glGetUniformLocation(program, b"Ld")
         location_MVP = glGetUniformLocation(program, b"MVP")
-        location_modelViewMatrix = glGetUniformLocation(program, b"modelViewMatrix")
         location_normalMatrix = glGetUniformLocation(program, b"normalMatrix")
-        location_projectionMatrix = glGetUniformLocation(program, b"projectionMatrix")
         
         # Upload light position
-        glUniform4f(location_lightPos, 0.0, 100.0, 0.0, 1.0)
+        glUniform4f(location_lightPos, 0.0, 50.0, 0.0, 1.0)
 
         # Upload light intensity
-        glUniform3f(location_Ld, 100.0, 0.0, 0.0)
+        glUniform3f(location_Ld, 1000.0, 0.0, 0.0)
 
         # Upload Transformation Matrices
         MVP_matrix = [1.0 if i % 5 == 0 else 0.0 for i in range(16)]
@@ -279,14 +283,12 @@ def render_faces(faceVerts, faceNormals, texData):
         normal_matrix = [1.0 if i % 4 == 0 else 0.0 for i in range(9)]
 
         glUniformMatrix4fv(location_MVP, 1, GL_FALSE, (GLfloat * 16)(*MVP_matrix))
-        glUniformMatrix4fv(location_modelViewMatrix, 1, GL_FALSE, (GLfloat * 16)(*modelView_matrix))
         glUniformMatrix3fv(location_normalMatrix, 1, GL_FALSE, (GLfloat * 9)(*normal_matrix))
         
         # Clear and enable stuffs
-        
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        #glEnable(GL_BLEND)
+        #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         
         # Bind Vertex Buffer
         glBindBuffer(GL_ARRAY_BUFFER, buffers["vertex_buffer"])
@@ -315,4 +317,3 @@ def render_faces(faceVerts, faceNormals, texData):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
 # ------------------
-    
