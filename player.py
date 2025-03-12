@@ -35,9 +35,9 @@ class Player():
 
         self.PLAYER_HEIGHT = 2
         
-        self.inventory = inventory.Inventory()
         self.model = model
         self.window = window
+        self.inventory = inventory.Inventory(window.dispatcher)
         self.state_machine = statemachine
         self.window.push_handlers(self)
         

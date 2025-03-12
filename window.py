@@ -3,6 +3,7 @@ from __future__ import division
 import math
 import model
 import player
+from EventDispatcher import EventDispatcher, BLOCK_CHANGED
 from states import GameState, StateMachine
 
 #from collections import deque
@@ -34,6 +35,10 @@ class Window(pyglet.window.Window):
             update_callback=self.update_paused
         )
         
+        # Instance of Event Dispatcher
+        self.dispatcher = EventDispatcher()
+
+        self.dispatcher.register_listener(BLOCK_CHANGED, self.on_block_changed)
         # Instance of the model that handles the world.
         self.model = model.Model()
         
@@ -419,3 +424,9 @@ class Window(pyglet.window.Window):
 
     def quit_button_pressed(self):
             pyglet.app.exit()
+
+    def on_block_changed(self):
+        self.create_inventory_bar()
+
+    def create_inventory_bar(self):
+        pass
