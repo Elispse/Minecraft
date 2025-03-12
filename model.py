@@ -187,7 +187,7 @@ class Model(object):
                     self.add_block((position[0]+tx, position[1] + y+3, position[2]+tz), block.OAK_LEAF, immediate=False)
 
     def grow_cactus(self, position):
-        for ty in xrange(1, random.randrange(2, 4)):
+        for ty in xrange(1, random.randrange(2, 5)):
             self.add_block((position[0], position[1] + ty, position[2]), block.CACTUS, immediate=False)
     
     def exposed(self, position):
