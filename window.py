@@ -586,12 +586,12 @@ class Window(pyglet.window.Window):
         )
         self.background.opacity = 25
     
-    
     def on_text(self, text):
         """Handles text input in command mode."""
         if self.state_machine.state == GameState.COMMAND_LINE:
             self.command_text += text
             print(self.command_text)
+    
     def process_command(self, command):
         """Processes player commands."""
         parts = command.split()
