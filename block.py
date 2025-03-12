@@ -38,6 +38,7 @@ DARK_OAK_WOOD_PLANK = tex_coords((26, 14), (26, 14), (26, 14))
 BRICK = tex_coords((29, 14), (29, 14), (29, 14))
 BEDROCK = tex_coords((0, 14), (0, 14), (0, 14))
 SAND = tex_coords((5, 14), (5, 14), (5, 14))
+CACTUS = tex_coords((15, 10), (15, 10), (16, 10))
 #Row 5
 LAMP = tex_coords((25, 7), (25, 7), (25, 7))
 PORTAL = tex_coords((26, 6), (26, 6), (26, 6))
@@ -45,3 +46,6 @@ PORTAL = tex_coords((26, 6), (26, 6), (26, 6))
 STONE_SLAB = tex_coords((27, 14),(27, 14),(28, 14))
 
 WATER_BLOCK = tex_coords((0, 1),(0, 1),(0, 1))
+
+OAK_LOG = tex_coords((4, 12), (4, 12), (3, 12))
+OAK_LEAF = tex_coords((7, 10), (7, 10), (7, 10))

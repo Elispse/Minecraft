@@ -86,6 +86,10 @@ class Model(object):
         # Simple function queue implementation. The queue is populated with
         # _show_block() and _hide_block() calls
         self.queue = deque()
+        
+        #A constant running list for placed teleport blocks in the world and their positions
+        self.teleport_blocks = {}
+        self.count = 0
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)  # noqa: F405
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) # noqa: F405
@@ -96,38 +100,96 @@ class Model(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        n = 160  # 1/2 width and height of world
+        n = 160  # 1/2 width and length of world
+        h = 0 # y-level for bottom layer (bedrock)
         s = 1  # step size
         y = 0  # initial y height
-        f = 2 # frequency
+        f = 4 # frequency
+        a = (1, 0.5, 0.334) # amplitude layers
+        exp = 2 # elevation exponent
+        adj = 1.2 # adjustment to pre-power elevation value
         
         elevation = []
-        for h in xrange(n*2):
+        for l in xrange(n*2):
             elevation.append([0] * n*2)
             for w in xrange(n):
                 nx = w/n - 0.5
-                ny = h/n - 0.5
-                elevation[h][w] = mmath.noise(f * nx, f * ny)
+                ny = l/n - 0.5
+                e = a[0] * mmath.noise(f * nx, f * ny)
+                e += a[1] * mmath.noise((f * 2) * nx + 5.3, (f * 2) * ny + 9.1)
+                e += a[2] * mmath.noise((f * 4) * nx + 17.8, (f * 4) * ny + 23.5)
+                e = e / (a[0] + a[1] + a[2])
+                elevation[l][w] = pow(e * adj, exp)
 
         
         for x in xrange(0, n, s):
             for z in xrange(0, n, s):
-                # create a layer stone an grass everywhere.
-                if (int(elevation[z][x]*10) < 2):
-                    self.add_block((x, int(elevation[z][x]*10), z), block.SAND, immediate=False)
-                else:
-                    self.add_block((x, int(elevation[z][x]*10), z), block.GRASS_BLOCK, immediate=False)
+                y = int(elevation[z][x]*10)
+                if y <= 0:
+                    y = 1
+                block_texture = self.set_environment(elevation[z][x])
+                self.add_block((x, y, z), block_texture, immediate=False)
                 
-                for dy in xrange(0, int(elevation[z][x]*10)):
-                    if dy == 0:
-                        self.add_block((x, dy, z), block.BEDROCK, immediate=True)
+                # Add tree
+                if block_texture == block.GRASS_BLOCK and random.random() < 0.01:
+                    self.grow_tree((x, y, z))
+                elif block_texture == block.SAND and random.random() < 0.005:
+                    self.grow_cactus((x, y, z))
+                
+                # Add bottom of the map
+                self.add_block((x, -h, z), block.BEDROCK, immediate=True)
+                
+                if y > 1:
+                    # Fill below the surface
+                    if block_texture == block.STONE:
+                        for dy in xrange(h+1, y):
+                            self.add_block((x, dy, z), block.STONE, immediate=False)
                     else:
-                        self.add_block((x, dy, z), block.DIRT, immediate=False)
-                # self.add_block((x, y - 3, z), block.STONE, immediate=False)
+                        midpoint = int(y / 2)
+                        for dy in xrange(h+1, y):
+                            if dy >= midpoint:
+                                self.add_block((x, dy, z), block.DIRT, immediate=False)
+                            else:
+                                self.add_block((x, dy, z), block.STONE, immediate=False)
+                
+                # create outer walls.
                 if x in (0, n-1) or z in (0, n-1):
-                    # create outer walls.
                     for dy in xrange(-5, 18):
                         self.add_block((x, y + dy, z), block.STONE_SLAB, immediate=False)
+
+    def set_environment(self, elevation):
+        block_texture = block.STONE
+        if (elevation < 0.1):
+            block_texture = block.WATER_BLOCK
+        elif (elevation < 0.2):
+                block_texture = block.SAND
+        elif (elevation < 0.6):
+            block_texture = block.GRASS_BLOCK
+        return block_texture
+    
+    def grow_tree(self, position):
+        y = random.randrange(3, 6)
+        for ty in xrange(1, y):
+            self.add_block((position[0], position[1] + ty, position[2]), block.OAK_LOG, immediate=False)
+        
+        for tx in xrange(-2, 3, 1):
+            for tz in xrange(-2, 3, 1):
+                if tx in (1, -1) or tz in (1, -1):
+                    self.add_block((position[0]+tx, position[1] + y, position[2]+tz), block.OAK_LEAF, immediate=False)
+                elif tx == 0 or tz == 0:
+                    self.add_block((position[0]+tx, position[1] + y, position[2]+tz), block.OAK_LEAF, immediate=False)
+                self.add_block((position[0]+tx, position[1] + y + 1, position[2]+tz), block.OAK_LEAF, immediate=False)
+        
+        for tx in xrange(-1, 2, 1):
+            for tz in xrange(-1, 2, 1):
+                self.add_block((position[0]+tx, position[1] + y+2, position[2]+tz), block.OAK_LEAF, immediate=False)
+                if tx == 0 or tz == 0:
+                    self.add_block((position[0]+tx, position[1] + y+3, position[2]+tz), block.OAK_LEAF, immediate=False)
+
+    def grow_cactus(self, position):
+        for ty in xrange(1, random.randrange(2, 4)):
+            self.add_block((position[0], position[1] + ty, position[2]), block.CACTUS, immediate=False)
+    
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
@@ -138,6 +200,18 @@ class Model(object):
             if (x + dx, y + dy, z + dz) not in self.world:
                 return True
         return False
+    
+    def exposed_faces(self, position):
+        """ Returns any exposed faces.
+        """
+        faces = []
+        
+        x, y, z = position
+        for dx, dy, dz in FACES:
+            if (x + dx, y + dy, z + dz) not in self.world:
+                faces.append((x + dx, y + dy, z + dz))
+        return faces
+        
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
@@ -159,6 +233,10 @@ class Model(object):
             self.remove_block(position, immediate)
         self.world[position] = texture
         self.sectors.setdefault(sectorize(position), []).append(position)
+        if texture == block.PORTAL:
+            self.teleport_blocks[self.count] = position
+            self.count += 1
+            print("portal added to list at" + (str)(position) + (str)(self.count))
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
@@ -177,6 +255,16 @@ class Model(object):
         """
         del self.world[position]
         self.sectors[sectorize(position)].remove(position)
+        for index, valueP in list(self.teleport_blocks.items()):
+            if valueP == position: #is value correct position of block to be removed
+                del self.teleport_blocks[index]
+                self.count -= 1
+                print("teleporter removed at" + (str)(position) + (str)(self.count))
+                break
+        
+         #Fix indexes of remaining items
+        self.teleport_blocks = {i: pos for i, pos in enumerate(self.teleport_blocks.values())}
+        
         if immediate:
             if position in self.shown:
                 self.hide_block(position)
@@ -334,27 +422,54 @@ class Model(object):
         pad = 0.0
         p = list(position)
         np = mmath.normalize(position)
+        
         for face in FACES:  # check all surrounding blocks
             for i in xrange(3):  # check each dimension independently
                 if not face[i]:
                     continue
+                
                 # How much overlap you have with this dimension.
                 d = (p[i] - np[i]) * face[i]
                 if d < pad:
                     continue
+                
                 for dy in xrange(player.PLAYER_HEIGHT):  # check each height
                     op = list(np)
                     op[1] -= dy
                     op[i] += face[i]
                     if tuple(op) not in self.world:
                         continue
+                    
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
                         # falling / rising.
                         player.velocity[1] = 0
                     break
+        for dx,dy,dz in FACES:       
+            check_position = (p[0] + dx, p[1]-1, p[2] + dz)
+            if check_position in self.teleport_blocks.values():
+                self.teleport_player(player, check_position)
+                return player.position  # return new position
+            
         return tuple(p)
+    
+    def teleport_player(self, player, c_position): #teleports to next block in list
+        if not self.teleport_blocks:
+            return  # No teleport blocks exist
+
+        # Find the current index of the block
+        current_index = None
+        for key, value in self.teleport_blocks.items():
+            if value == c_position:
+                current_index = key
+                break
+
+        if current_index is not None:
+            next_index = (current_index + 1) % len(self.teleport_blocks)  # Cycle to next position
+            next_position = self.teleport_blocks[next_index]
+            player.position = (next_position[0] + 1, next_position[1] + 2,next_position[2])  # Teleport player (offset by 1 block on x and y)
+            print(f"Teleported to " +(str)(next_position))
 
     def _enqueue(self, func, *args):
         """ Add `func` to the internal queue.

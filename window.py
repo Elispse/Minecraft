@@ -3,7 +3,7 @@ from __future__ import division
 import math
 import model
 import player
-from EventDispatcher import EventDispatcher, BLOCK_CHANGED
+import random
 from states import GameState, StateMachine
 
 #from collections import deque
@@ -44,6 +44,8 @@ class Window(pyglet.window.Window):
         
         # Instance of the player that interacts with the world.
         self.player = player.Player(self.model, self, self.state_machine)
+        while (self.model.collide(self.player, self.player.position) < self.player.position):
+            self.player.position = (self.player.position[0], self.player.position[1]+1, self.player.position[2])
 
         # Which sector the player is currently in.
         self.sector = None
