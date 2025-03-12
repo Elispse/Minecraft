@@ -20,6 +20,9 @@ class Window(pyglet.window.Window):
         self.command_text = ""
         self.player_position = (0, 0, 0)  # Placeholder for player position
         
+        self.command_text = ""
+        self.player_position = (0, 0, 0)  # Placeholder for player position
+        
         # Add states with their respective callbacks
         self.state_machine.add_state(
             GameState.MAIN_MENU,
@@ -35,6 +38,11 @@ class Window(pyglet.window.Window):
             GameState.PAUSED,
             enter_callback=self.enter_paused,
             update_callback=self.update_paused
+        )
+        self.state_machine.add_state(
+            GameState.COMMAND_LINE, 
+            enter_callback=self.enter_command_mode, 
+            exit_callback=self.exit_command_mode
         )
         self.state_machine.add_state(
             GameState.COMMAND_LINE, 
@@ -61,6 +69,14 @@ class Window(pyglet.window.Window):
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
             color=(0, 0, 0, 255))
         
+        self.command_prompt_label = pyglet.text.Label(
+            "Command: ",
+            font_name="Arial",
+            font_size=18,
+            x=10, y=10,
+            anchor_x="left", anchor_y="bottom",
+            color=(255, 255, 255, 255)
+        )
         self.command_prompt_label = pyglet.text.Label(
             "Command: ",
             font_name="Arial",
@@ -175,6 +191,11 @@ class Window(pyglet.window.Window):
             self.main_menu_batch.draw()
         elif self.state_machine.state == GameState.PAUSED:
             self.pause_menu_batch.draw()
+        elif self.state_machine.state == GameState.COMMAND_LINE:
+            self.command_prompt_label.text = 'Command: ' + self.command_text
+            self.command_batch.draw()
+            self.command_prompt_label.draw()
+            
         elif self.state_machine.state == GameState.COMMAND_LINE:
             self.command_prompt_label.text = 'Command: ' + self.command_text
             self.command_batch.draw()
@@ -438,36 +459,50 @@ class Window(pyglet.window.Window):
 
     def quit_button_pressed(self):
             pyglet.app.exit()
+            
+    def enter_command_mode(self):
+        self.command_text = ""
+        self.create_command_line()
+        print("Entered command mode. Type a command and press Enter.")
 
-    def on_block_changed(self):
-        """Update the inventory bar when the inventory changes."""
-        self.inventory_bar = self.create_inventory_bar()
+    def exit_command_mode(self):
+        print("Exited command mode.")
+        
+    def create_command_line(self):
+        # Create a container for the pause menu
+        self.command_batch = pyglet.graphics.Batch()
+        window_size = self.get_size()
 
-    def reverse_tex_coord(self, dx, dy, w=32, h=16):
-        """ Reverse the texture coordinates back to (x, y). """
-        width = 1.0 / w
-        height = 1.0 / h
-        x = int(dx / width)
-        y = int(dy / height)
-        return x, y
+        # Create a semi-transparent background
+        self.background = pyglet.shapes.Rectangle(
+            x=0, 
+            y=0, 
+            width=window_size[0], 
+            height=window_size[1]/8,
+            color=(0, 0, 0), 
+            batch=self.command_batch
+        )
+        self.background.opacity = 25
+        
+        
+    def on_text(self, text):
+        """Handles text input in command mode."""
+        if self.state_machine.state == GameState.COMMAND_LINE:
+            self.command_text += text
+            print(self.command_text)
 
-    def reverse_tex_coords_list(self, coord_list, w=32, h=16):
-        """ Reverse a full list of texture coordinates back to their original (x, y) pairs for a 3D block model. """
-        result = {
-            "top": [],
-            "bottom": [],
-            "side": []  # Only one side entry since it's repeated
-        }
-        result["top"].append(self.reverse_tex_coord(coord_list[0], coord_list[1], w, h))
-        result["bottom"].append(self.reverse_tex_coord(coord_list[8], coord_list[9], w, h))
-        result["side"].append(self.reverse_tex_coord(coord_list[16], coord_list[17], w, h))
-        return result
-    
-    def get_texture_pixel_position(self, column, row, texture_size=16):
-        x = column * texture_size
-        y = row * texture_size
-        return (x, y)
-
+    def process_command(self, command):
+        """Processes player commands."""
+        parts = command.split()
+        if len(parts) == 4 and parts[0].lower() == "teleport":
+            try:
+                x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+                self.player.position = (x, y, z)  # Move player
+                print(f"Teleported to ({x}, {y}, {z})")
+            except ValueError:
+                print("Invalid coordinates!")
+        else:
+            print("Invalid command. Use: teleport x y z")
             
     def enter_command_mode(self):
         self.command_text = ""

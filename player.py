@@ -323,7 +323,7 @@ class Player():
                 self.window.process_command(self.window.command_text)
                 self.state_machine.change_state(GameState.PLAYING)
                 return pyglet.event.EVENT_HANDLED
-        
+    
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
         mappings.
