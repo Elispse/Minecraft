@@ -568,10 +568,6 @@ class Window(pyglet.window.Window):
         self.create_command_line()
         print("Entered command mode. Type a command and press Enter")
     
-    def update_command_line(self, dt):
-        # Handle input for the pause menu (e.g., resume, quit)
-        pass 
-      
     def exit_command_mode(self):
         print("Exited command mode.")
         
