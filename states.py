@@ -6,6 +6,7 @@ class GameState(Enum):
     PAUSED = auto()
     INVENTORY = auto()
     GAME_OVER = auto()
+    COMMAND_LINE = auto()
 
 class StateMachine:
     def __init__(self, initial_state):
