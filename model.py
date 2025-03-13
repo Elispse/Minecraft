@@ -170,25 +170,25 @@ class Model(object):
     def grow_tree(self, position):
         y = random.randrange(3, 6)
         for ty in xrange(1, y):
-            self.add_block((position[0], position[1] + ty, position[2]), block.OAK_LOG, immediate=False)
+            self.add_block((position[0], position[1] + ty, position[2]), block.OAK_LOG, immediate=True)
         
         for tx in xrange(-2, 3, 1):
             for tz in xrange(-2, 3, 1):
                 if tx in (1, -1) or tz in (1, -1):
-                    self.add_block((position[0]+tx, position[1] + y, position[2]+tz), block.OAK_LEAF, immediate=False)
+                    self.add_block((position[0]+tx, position[1] + y, position[2]+tz), block.OAK_LEAF, immediate=True)
                 elif tx == 0 or tz == 0:
-                    self.add_block((position[0]+tx, position[1] + y, position[2]+tz), block.OAK_LEAF, immediate=False)
-                self.add_block((position[0]+tx, position[1] + y + 1, position[2]+tz), block.OAK_LEAF, immediate=False)
+                    self.add_block((position[0]+tx, position[1] + y, position[2]+tz), block.OAK_LEAF, immediate=True)
+                self.add_block((position[0]+tx, position[1] + y + 1, position[2]+tz), block.OAK_LEAF, immediate=True)
         
         for tx in xrange(-1, 2, 1):
             for tz in xrange(-1, 2, 1):
-                self.add_block((position[0]+tx, position[1] + y+2, position[2]+tz), block.OAK_LEAF, immediate=False)
+                self.add_block((position[0]+tx, position[1] + y+2, position[2]+tz), block.OAK_LEAF, immediate=True)
                 if tx == 0 or tz == 0:
-                    self.add_block((position[0]+tx, position[1] + y+3, position[2]+tz), block.OAK_LEAF, immediate=False)
+                    self.add_block((position[0]+tx, position[1] + y+3, position[2]+tz), block.OAK_LEAF, immediate=True)
 
     def grow_cactus(self, position):
         for ty in xrange(1, random.randrange(2, 5)):
-            self.add_block((position[0], position[1] + ty, position[2]), block.CACTUS, immediate=False)
+            self.add_block((position[0], position[1] + ty, position[2]), block.CACTUS, immediate=True)
     
     def exposed_faces(self, position):
         faceArray = []

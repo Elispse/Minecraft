@@ -602,5 +602,12 @@ class Window(pyglet.window.Window):
                 print(f"Teleported to ({x}, {y}, {z})")
             except ValueError:
                 print("Invalid coordinates!")
+        elif len(parts) == 2 and parts[0].lower() == "spawn":
+            vector = self.player.get_sight_vector()
+            selectedBlock, previous = self.player.hit_test(vector)
+            if parts[1].lower() == "tree":
+                self.model.grow_tree((previous[0], previous[1] - 1, previous[2]))
+            elif parts[1].lower() == "cactus":
+                self.model.grow_cactus((previous[0], previous[1] - 1, previous[2]))
         else:
             print("Invalid command. Use: teleport x y z")
