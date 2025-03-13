@@ -605,9 +605,11 @@ class Window(pyglet.window.Window):
         elif len(parts) == 2 and parts[0].lower() == "spawn":
             vector = self.player.get_sight_vector()
             selectedBlock, previous = self.player.hit_test(vector)
-            if parts[1].lower() == "tree":
+            if parts[1].lower() == "tree" and previous:
                 self.model.grow_tree((previous[0], previous[1] - 1, previous[2]))
-            elif parts[1].lower() == "cactus":
+            elif parts[1].lower() == "cactus" and previous:
                 self.model.grow_cactus((previous[0], previous[1] - 1, previous[2]))
+            else:
+                print("Invalid command. View block and use: spawn [cactus or tree]")
         else:
             print("Invalid command. Use: teleport x y z")
